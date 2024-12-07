@@ -77,7 +77,7 @@ local function _run_test(source_text, expected)
 
     -- NOTE: We ignore the last few lines because they are auto-generated.
     local raw = vim.fn.readfile(destination)
-    local found = vim.fn.join(_get_slice(raw, 1, math.max(#raw - 3, 1)), "\n")
+    local found = vim.fn.join(_get_slice(raw, 1, math.max(#raw - 2, 1)), "\n")
 
     assert.equal(expected, found)
 end
@@ -219,23 +219,23 @@ describe("@field", function()
 ---    Etc etc.
             ]],
             [[
-    ==============================================================================
-    ------------------------------------------------------------------------------
-    *Foo*
+==============================================================================
+------------------------------------------------------------------------------
+*Foo*
     And some text here.
 
-    Fields ~
-    {bar} |SomeCustomType|
+Fields ~
+    {bar} SomeCustomType
        More information.
-    {fizz} |_PrivateThing|
+    {fizz} _PrivateThing
        Lines and lines.
        with more lines here
        that span extra lines.
-    {blah} `string`
+    {blah} `(string)`
        Stuff
-    {buzz} |namespaced._foo.Thing|
+    {buzz} namespaced._foo.Thing
        Etc etc.
-    ]]
+]]
         )
     end)
 end)
