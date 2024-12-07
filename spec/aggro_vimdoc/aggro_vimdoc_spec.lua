@@ -73,7 +73,7 @@ local function _run_test(source_text, expected)
     local destination = _make_temporary_file(".txt")
 
     vim.fn.writefile(vim.fn.split(source_text, "\n"), source)
-    vimdoc.make_documentation_files({{source=source, destination=destination}})
+    vimdoc.make_documentation_files({ { source = source, destination = destination } })
 
     -- NOTE: We ignore the last few lines because they are auto-generated.
     local raw = vim.fn.readfile(destination)
@@ -93,9 +93,47 @@ local function _after_each()
     _DIRECTORIES_TO_DELETE = {}
 end
 
+describe("replacements", function()
+    before_each(_silence_mini_doc)
+    after_each(_after_each)
+
+    it("works with functions", function()
+        _run_test(
+            [[
+    --- A module.
+    ---
+    ---@module 'foo.bar'
+    ---
+
+    local M = {}
+
+    function M
+    ---@class Foo
+    ---@field bar string
+    ---@field fizz number
+    ---@field buzz integer
+            ]],
+            [[
+    ==============================================================================
+    ------------------------------------------------------------------------------
+    *Foo*
+
+    Fields ~
+    {bar} `(string)`
+    {fizz} `(number)`
+    {buzz} `(integer)`
+    ]]
+        )
+    end)
+end)
+
 describe("@class", function()
     before_each(_silence_mini_doc)
     after_each(_after_each)
+
+    it("works with metatable definitions", function()
+        -- TODO: finish
+    end)
 
     it("works with a contiguous @class definition - 001 - no descriptions", function()
         _run_test(
@@ -149,5 +187,11 @@ Fields ~
        Etc etc.
 ]]
         )
+    end)
+end)
+
+describe("@param", function()
+    it("links custom @class / @alias / @enum", function()
+    -- TODO: Finish
     end)
 end)
