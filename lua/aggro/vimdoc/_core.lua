@@ -1,5 +1,7 @@
 --- The file that auto-creates documentation for `aggro.vimdoc`.
 
+local logging = require("aggro.vimdoc._vendors.logging")
+
 local success, doc = pcall(require, "mini.doc")
 
 if not success then
@@ -12,6 +14,8 @@ local _P = {}
 if _G.MiniDoc == nil then
     doc.setup()
 end
+
+local _LOGGER = logging.get_logger("aggro.vimdoc._core")
 
 local M = {}
 
@@ -44,8 +48,11 @@ end
 
 --- Get the last (contiguous) key in `data` that is numbered.
 ---
----`data` might be a combination of number or string keys. The first key is
----expected to be numbered. If so, we get the last key that is a number.
+--- `data` might be a combination of number or string keys. The first key is
+--- expected to be numbered. If so, we get the last key that is a number.
+---
+--- Raises:
+---     If `data` isn't a numeric table.
 ---
 ---@param data table<integer | string, any> The data to check.
 ---@return number # The last found key.
@@ -71,7 +78,7 @@ end
 --- Create the callbacks that we need to create our documentation.
 ---
 ---@param module_identifier string?
----    If provided, any reference to this identifier (e.g. `M`) will be
+---    If provided, any reference to this identifier (e.g. `"M"`) will be
 ---    replaced with the real import path.
 ---@return MiniDoc.Hooks
 ---    All of the generated callbacks.
@@ -210,23 +217,32 @@ function _P.get_module_identifier(path)
     local node = _P.get_return_node(buffer)
 
     if not node then
-        -- TODO: Add logging
-        -- _LOGGER:fmt_debug('Path "%s" has no return statement.', path)
+        _LOGGER:fmt_debug('Path "%s" has no return statement.', path)
+
         return nil
     end
 
-    for index=1,node.named_child do
-        local child = node.named_child(index)
+    local count = node:named_child_count() - 1
 
-        if child.type == "expression_list" then
-            return child
+    for index=0,count do
+        local child = node:named_child(index)
+
+        if not child then
+            local text = vim.treesitter.get_node_text(node, buffer)
+            error(string.format('Bug: Node "%s" somehow has no "%s" index.', text, index), 0)
+        end
+
+        if child:type() == "expression_list" then
+            return vim.treesitter.get_node_text(child, buffer)
         end
     end
 
-    -- local text = vim.treesitter.get_node_text(child, buffer)
-    --
-    -- TODO: Add logging here
-    -- _LOGGER:fmt_debug('Bug found. Got "%s / %s" node from "%s" file but could not find an expression.', child.type, text, path)
+    _LOGGER:fmt_debug(
+        'This could be a bug or "%s" file actually has an empty return statement. '
+        .. 'Please double-check',
+        path
+    )
+
     return nil
 end
 
@@ -252,11 +268,31 @@ end
 --     return nil
 -- end
 
+--- Find the bottom `return ...` statement in the Lua `buffer`.
+---
+---@param buffer integer A 0-or-more Vim data buffer. 0 == the current buffer.
+---@return TSNode? # The found node, if any.
+---
 function _P.get_return_node(buffer)
     local parser = vim.treesitter.get_parser(buffer, "lua")
+
+    if not parser then
+        return nil
+    end
+
     local tree = parser:parse()[1]
     local root = tree:root()
-    local return_node = root.named_child(root.child_count)
+    local return_node = root:named_child(root:named_child_count() - 1)
+
+    if not return_node then
+        return nil
+    end
+
+    if return_node:type() ~= "return_statement" then
+        return nil
+    end
+
+    return return_node
 end
 
 --- Ensure there is one blank space around `section` by modifying it.
@@ -397,14 +433,23 @@ function _P.strip_function_identifier(section, module_identifier)
     end
 end
 
--- TODO: Docstring
+--- Make a temporary Vim buffer and fill it with the data from `path`.
+---
+---@param path string A file on-disk to read as temporary buffer data.
+---@return integer # A 1-or-more value. The created Vim buffer.
+---
 function _P.make_temporary_buffer(path)
     local lines = vim.fn.readfile(path)
     local buffer = vim.api.nvim_create_buf(false, true)
     vim.api.nvim_buf_set_lines(buffer, 0, -1, false, lines)
+
+    return buffer
 end
 
 --- Make sure `paths` can be processed by this script.
+---
+--- Raises:
+---     If `paths` has unreadable paths.
 ---
 ---@param paths aggro.vimdoc.AutoDocumentationEntry[]
 ---    The source/destination pairs to check.

@@ -93,9 +93,13 @@ local function _after_each()
     _DIRECTORIES_TO_DELETE = {}
 end
 
-describe("replacements", function()
+describe("namespace replacements", function()
     before_each(_silence_mini_doc)
     after_each(_after_each)
+
+    it("still works if the module has no `return` statement", function()
+        -- TODO: Finish
+    end)
 
     it("works with functions", function()
         _run_test(
@@ -107,21 +111,28 @@ describe("replacements", function()
 
     local M = {}
 
-    function M
-    ---@class Foo
-    ---@field bar string
-    ---@field fizz number
-    ---@field buzz integer
+    --- Do something.
+    ---
+    ---@param value integer A thing.
+    ---@return string # Text.
+    ---
+    function M.something(value)
+        return "stuff"
+    end
+
+    return M
             ]],
             [[
     ==============================================================================
     ------------------------------------------------------------------------------
-    *Foo*
+                                                                 *foo.bar.something*
+    foo.bar.something({value})
 
     Fields ~
-    {bar} `(string)`
-    {fizz} `(number)`
-    {buzz} `(integer)`
+    {value} `(integer)` A thing.
+
+    Returns ~
+    `(string)` Text.
     ]]
         )
     end)
@@ -186,6 +197,45 @@ Fields ~
     {buzz} `(integer)`
        Etc etc.
 ]]
+        )
+    end)
+end)
+
+describe("@field", function()
+    it("links custom @class / @alias / @enum", function()
+        _run_test(
+            [[
+---@class Foo
+---    And some text here.
+---@field bar SomeCustomType
+---    More information.
+---@field fizz _PrivateThing
+---    Lines and lines.
+---    with more lines here
+---    that span extra lines.
+---@field blah string
+---    Stuff
+---@field buzz namespaced._foo.Thing
+---    Etc etc.
+            ]],
+            [[
+    ==============================================================================
+    ------------------------------------------------------------------------------
+    *Foo*
+    And some text here.
+
+    Fields ~
+    {bar} |SomeCustomType|
+       More information.
+    {fizz} |_PrivateThing|
+       Lines and lines.
+       with more lines here
+       that span extra lines.
+    {blah} `string`
+       Stuff
+    {buzz} |namespaced._foo.Thing|
+       Etc etc.
+    ]]
         )
     end)
 end)
