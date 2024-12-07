@@ -1,9 +1,9 @@
---- The file that auto-creates documentation for `plugin_template`.
+--- The file that auto-creates documentation for `aggro.vimdoc`.
 
 local success, doc = pcall(require, "mini.doc")
 
 if not success then
-    error("mini.doc is required to run this script. Please clone + source https://github.com/echasnovski/mini.doc")
+    error("mini.doc is required to run aggro.vimdoc. Please clone + source https://github.com/echasnovski/mini.doc")
 end
 
 ---@diagnostic disable-next-line: undefined-field
@@ -31,7 +31,7 @@ end
 ---    A description of what this section is meant to display / represent.
 ---@field parent MiniDoc.Section?
 ---    The section that includes this instance as one of its children, if any.
----@field parent_index number?
+---@field parent_index integer?
 ---    If a `parent` is defined, this is the position of this instance in `parent`.
 ---@field type string
 ---    A description about what this object is. Is it a section or a block or
@@ -41,16 +41,18 @@ local _Section = {} -- luacheck: ignore 241 -- variable never accessed
 
 --- Add `child` to this instance at `index`.
 ---
----@param index number The 1-or-more position to add `child` into.
+---@param index integer The 1-or-more position to add `child` into.
 ---@param child string The text to add.
 ---
 function _Section:insert(index, child) end -- luacheck: ignore 212 -- unused argument
 
 --- Remove a child from this instance at `index`.
 ---
----@param index number? The 1-or-more position to remove `child` from.
+---@param index integer? The 1-or-more position to remove `child` from.
 ---
 function _Section:remove(index) end -- luacheck: ignore 212 -- unused argument
+
+local M = {}
 
 --- Check if `text` is the start of a function's parameters.
 ---
@@ -81,8 +83,8 @@ end
 
 --- Add the text that Vimdoc uses to generate doc/tags (basically surround the text with *s).
 ---
----@param text string Any text, e.g. `"plugin_template.ClassName"`.
----@return string # The wrapped text, e.g. `"*plugin_template.ClassName*"`.
+---@param text string Any text, e.g. `"aggro.vimdoc.ClassName"`.
+---@return string # The wrapped text, e.g. `"*aggro.vimdoc.ClassName*"`.
 ---
 local function _add_tag(text)
     return (text:gsub("(%S+)", "%*%1%*"))
@@ -120,7 +122,7 @@ end
 ---`data` might be a combination of number or string keys. The first key is
 ---expected to be numbered. If so, we get the last key that is a number.
 ---
----@param data table<number | string, any> The data to check.
+---@param data table<integer | string, any> The data to check.
 ---@return number # The last found key.
 ---
 local function _get_last_numeric_key(data)
@@ -174,7 +176,7 @@ end
 ---    Usually a function in Lua is defined with `function M.foo`. In this
 ---    example, `module_identifier` would be the `M` part.
 ---@param module_name string
----    The real name for the module. e.g. `"plugin_template"`.
+---    The real name for the module. e.g. `"aggro.vimdoc"`.
 ---
 local function _replace_function_name(section, module_identifier, module_name)
     local prefix = string.format("^%s%%.", module_identifier)
@@ -190,7 +192,7 @@ end
 ---
 ---@param section MiniDoc.Section
 ---    The object to possibly modify.
----@param count number?
+---@param count integer?
 ---    The number of lines to put before `section` if needed. If the section
 ---    has more newlines than `count`, it is converted back to `count`.
 ---
@@ -370,13 +372,6 @@ local function _get_module_enabled_hooks(module_identifier)
     return hooks
 end
 
----@return string # Get the directory on-disk where this Lua file is running from.
-local function _get_script_directory()
-    local path = debug.getinfo(1, "S").source:sub(2) -- Remove the '@' at the start
-
-    return path:match("(.*/)")
-end
-
 --- Parse `path` to find the source code that refers to the user's Lua file, if any.
 
 ---@param path string
@@ -392,43 +387,27 @@ local function _get_module_identifier(path) -- luacheck: ignore 212 -- unused ar
     return "M"
 end
 
----@class plugin_template.AutoDocumentationEntry
----    The simple source/destination of "Lua file that we want to auto-create
----    documentation from + the .txt file that we want auto-create to".
----@field source string
----    An absolute path to a Lua file on-disk. e.g. `"/path/to/init.lua"`.
----@field destination string
----    An absolute path for the auto-created documentation.
----    e.g. `"/out/plugin_template.txt"`.
-
 --- Make sure `paths` can be processed by this script.
 ---
----@param paths plugin_template.AutoDocumentationEntry[]
+---@param paths aggro.vimdoc.AutoDocumentationEntry[]
 ---    The source/destination pairs to check.
 ---
 local function _validate_paths(paths)
     for _, entry in ipairs(paths) do
-        if vim.fn.filereadable(entry.source) ~= 1 then
-            error(string.format('Source "%s" is not readable.', vim.inspect(entry)))
+        local source = entry.source
+
+        if vim.fn.filereadable(source) ~= 1 then
+            error(string.format('Source "%s" is not readable.', vim.inspect(entry.source)))
         end
     end
 end
 
 --- Convert the files in this plug-in from Lua docstrings to Vimdoc documentation.
-local function main()
-    local current_directory = _get_script_directory()
-    local root = vim.fs.normalize(vim.fs.joinpath(current_directory, "..", ".."))
-    local paths = {
-        {
-            source = vim.fs.joinpath(root, "lua", "plugin_template", "init.lua"),
-            destination = vim.fs.joinpath(root, "doc", "plugin_template_api.txt"),
-        },
-        {
-            source = vim.fs.joinpath(root, "lua", "plugin_template", "types.lua"),
-            destination = vim.fs.joinpath(root, "doc", "plugin_template_types.txt"),
-        },
-    }
-
+---
+---@param paths aggro.vimdoc.AutoDocumentationEntry[]
+---    All of the source + destination pairs to process.
+---
+function M.make_documentation_files(paths)
     _validate_paths(paths)
 
     for _, entry in ipairs(paths) do
@@ -442,4 +421,4 @@ local function main()
     end
 end
 
-main()
+return M

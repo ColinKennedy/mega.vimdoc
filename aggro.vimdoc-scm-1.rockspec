@@ -1,5 +1,5 @@
 rockspec_format = "3.0"
-package = "plugin-template"
+package = "aggro.vimdoc"
 version = "scm-1"
 
 local user = "ColinKennedy"
