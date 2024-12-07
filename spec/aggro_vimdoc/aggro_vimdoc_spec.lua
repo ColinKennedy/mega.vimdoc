@@ -37,7 +37,8 @@ end
 
 --- Stop mini.doc from printing during unittests.
 local function _silence_mini_doc()
-    vim.notify = function(...) end
+    ---@diagnostic disable-next-line: duplicate-set-field
+    vim.notify = function() end
 end
 
 --- Revert any mocks before unittests were ran.
@@ -86,7 +87,7 @@ local function _after_each()
     _reset_mini_doc()
 
     for _, directory in ipairs(_DIRECTORIES_TO_DELETE) do
-        vim.fn.delete(directory)
+        vim.fn.delete(directory, "rf")
     end
 
     _DIRECTORIES_TO_DELETE = {}

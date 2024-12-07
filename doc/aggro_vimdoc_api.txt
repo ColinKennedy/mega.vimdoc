@@ -1,0 +1,18 @@
+==============================================================================
+------------------------------------------------------------------------------
+The file that auto-creates documentation for `aggro.vimdoc`.
+
+------------------------------------------------------------------------------
+                                       *aggro.vimdoc.make_documentation_files()*
+
+`make_documentation_files`({paths})
+
+Convert the files in this plug-in from Lua docstrings to Vimdoc documentation.
+
+Parameters ~
+    {paths} aggro.vimdoc.AutoDocumentationEntry[]
+       All of the source + destination pairs to process.
+
+WARNING: This file is auto-generated. Do not edit it!
+
+ vim:tw=78:ts=8:noet:ft=help:norl:
