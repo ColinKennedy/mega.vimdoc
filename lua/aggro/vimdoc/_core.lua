@@ -225,20 +225,20 @@ function _P.get_module_enabled_hooks(module_identifier)
             end
 
             if section.info.id == "@field" and _P.is_field_section(section[1]) then
-                local previous_section = section.parent[section.parent_index - 1]
+                local previous_section = _P.get_previous_sibling(section)
 
                 if previous_section then
                     _P.set_leading_newline(section)
-                    _P.set_leading_newline(previous_section)
+                    _P.set_leading_newline(_P.get_previous_sibling(previous_section))
                 end
             end
 
             if section.info.id == "@param" and _P.is_parameter_section(section[1]) then
-                local previous_section = section.parent[section.parent_index - 1]
+                local previous_section = _P.get_previous_sibling(section)
 
                 if previous_section then
                     _P.set_leading_newline(section)
-                    _P.set_leading_newline(previous_section)
+                    _P.set_leading_newline(_P.get_previous_sibling(previous_section))
                 end
             end
 
@@ -339,6 +339,17 @@ end
 --
 --     return nil
 -- end
+
+--- Find the sibling that comes before `section`, if any.
+---
+---@param section MiniDoc.Section
+---    A renderable blob of text (which will later auto-create into documentation).
+---@return MiniDoc.Section?
+---    The found sibling, if any.
+---
+function _P.get_previous_sibling(section)
+    return section.parent[section.parent_index - 1]
+end
 
 --- Find the bottom `return ...` statement in the Lua `buffer`.
 ---
