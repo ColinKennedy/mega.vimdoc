@@ -243,35 +243,21 @@ describe("@class", function()
 ---
 M.Parameter = {
     __tostring = function(parameter)
-        return string.format("Parameter({names=%s})", parameter.name)
+        return string.format("Parameter({name=%s})", parameter.name)
     end,
 }
 M.Parameter.__index = M.Parameter
 
 --- Create a new instance using `options`.
 ---
----@param options cmdparse.ParameterOptions All of the settings to include in a new parse argument.
----@return cmdparse.Parameter # The created instance.
+---@param options ParameterOptions User input.
+---@return Parameter # The created instance.
 ---
 function M.Parameter.new(options)
-    --- @class cmdparse.Parameter
+    ---@class Parameter
     local self = setmetatable({}, M.Parameter)
 
-    self._action = nil
-    self._action_type = nil
-    self._nargs = options.nargs or 1
-    self._type = options.type
-    self._used = 0
-    self.choices = options.choices
-    self.count = options.count or 1
-    self.default = options.default
-    self.names = options.names
-    self.help = options.help
-    self.destination = text_parse.get_nice_name(options.destination or options.names[1])
-    self:set_action(options.action)
-    self.required = options.required
-    self.value_hint = options.value_hint
-    self._parent = options.parent
+    self.name = options.name
 
     return self
 end
@@ -299,10 +285,10 @@ A module.
 Create a new instance using `options`.
 
 Parameters ~
-    {options} cmdparse.ParameterOptions All of the settings to include in a new parse argument.
+    {options} ParameterOptions All of the settings to include in a new parse argument.
 
 Return ~
-    cmdparse.Parameter The created instance.
+    Parameter The created instance.
 ]]
         )
     end)

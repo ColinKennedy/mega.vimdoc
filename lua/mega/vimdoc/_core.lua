@@ -584,7 +584,7 @@ function _P.validate_paths(paths)
         local source = entry.source
 
         if vim.fn.filereadable(source) ~= 1 then
-            error(string.format('Source "%s" is not readable.', vim.inspect(entry.source)))
+            error(string.format('Source "%s" is not readable.', entry.source))
         end
     end
 end

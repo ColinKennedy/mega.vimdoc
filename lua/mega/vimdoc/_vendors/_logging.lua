@@ -3,7 +3,7 @@
 ---@module 'mega.vimdoc._vendors._logging'
 ---
 
----@class mega.logging.SparseLoggerOptions
+---@class mega.vimdoc._vendors._logging.SparseLoggerOptions
 ---    All of the customizations a person can make to a logger instance.
 ---@field float_precision number?
 ---    A positive value (max of 1) to indicate the rounding precision. e.g.
@@ -25,7 +25,7 @@
 ---    built-in Lua commands will be used. This is useful if you want to log
 ---    within a libuv thread and don't want to call `vim.schedule()`.
 
----@class mega.logging.LoggerOptions
+---@class mega.vimdoc._vendors._logging.LoggerOptions
 ---    All of the customizations a person can make to a logger instance.
 ---@field float_precision number
 ---    A positive value (max of 1) to indicate the rounding precision. e.g.
@@ -47,7 +47,7 @@
 ---    built-in Lua commands will be used. This is useful if you want to log
 ---    within a libuv thread and don't want to call `vim.schedule()`.
 
----@class mega.logging._LevelMode
+---@class mega.vimdoc._vendors._logging._LevelMode
 ---    Data related to `level` to consider.
 ---@field highlight string
 ---    The Neovim highlight group name used to colorize the logs.
@@ -109,13 +109,13 @@ M._DEFAULTS = {
 local _ROOT_NAME = "__ROOT__"
 
 ---@private
----@type table<string, mega.logging.Logger>
+---@type table<string, mega.vimdoc._vendors._logging.Logger>
 M._LOGGERS = {}
 
----@class mega.logging.Logger
+---@class mega.vimdoc._vendors._logging.Logger
 M.Logger = {
     __tostring = function(logger)
-        return string.format("mega.logging.Logger({names=%s})", vim.inspect(logger.name))
+        return string.format("mega.vimdoc._vendors._logging.Logger({names=%s})", vim.inspect(logger.name))
     end,
 }
 M.Logger.__index = M.Logger
@@ -142,7 +142,7 @@ end
 ---
 ---@param level number
 ---    The level for the log (debug, info, etc).
----@param mode mega.logging._LevelMode
+---@param mode mega.vimdoc._vendors._logging._LevelMode
 ---    Data related to `level` to consider.
 ---@param ... any
 ---    Arguments to pass to `message_maker`. It's expected that the first
@@ -172,7 +172,7 @@ end
 --- Decide whether or not to log and how.
 ---
 ---@param level number The level for the log (debug, info, etc).
----@param mode mega.logging._LevelMode Data related to `level` to consider.
+---@param mode mega.vimdoc._vendors._logging._LevelMode Data related to `level` to consider.
 ---@param message_maker fun(...: any): string The function that, when called, creates a log message.
 ---@param ... any Arguments to pass to `message_maker`.
 ---@private
@@ -356,11 +356,11 @@ end
 
 --- Create a new logger according to `options`.
 ---
----@param options mega.logging.LoggerOptions The logger to create.
----@return mega.logging.Logger # The created instance.
+---@param options mega.vimdoc._vendors._logging.LoggerOptions The logger to create.
+---@return mega.vimdoc._vendors._logging.Logger # The created instance.
 ---
 function M.Logger.new(options)
-    ---@class mega.logging.Logger
+    ---@class mega.vimdoc._vendors._logging.Logger
     local self = setmetatable({}, M.Logger)
 
     self.level = options.level
@@ -388,8 +388,8 @@ end
 
 --- Find an existing logger with `name` or create one if it does not exist already.
 ---
----@param options mega.logging.LoggerOptions | mega.logging.SparseLoggerOptions | string The logger to create.
----@return mega.logging.Logger # The created instance.
+---@param options mega.vimdoc._vendors._logging.LoggerOptions | mega.vimdoc._vendors._logging.SparseLoggerOptions | string The logger to create.
+---@return mega.vimdoc._vendors._logging.Logger # The created instance.
 ---
 function M.get_logger(options)
     if type(options) == "string" then
@@ -398,7 +398,7 @@ function M.get_logger(options)
     end
 
     options = vim.tbl_deep_extend("force", M._DEFAULTS, options or {})
-    ---@cast options mega.logging.LoggerOptions
+    ---@cast options mega.vimdoc._vendors._logging.LoggerOptions
 
     local name = options.name
 
