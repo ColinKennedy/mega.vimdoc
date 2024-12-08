@@ -120,7 +120,6 @@ M.Logger = {
 }
 M.Logger.__index = M.Logger
 
--- TODO: Replace the timing function that rounds precision with this rounder, instead.
 --- Approximate (round) `value` according to `increment`.
 ---
 ---@param value number

@@ -50,13 +50,8 @@ function _P.is_parameter_section(text)
     return text:match("%s*Parameters%s*~%s*")
 end
 
---- Check if `text` contains only spaces / tabs.
----
----@param text string Some text to check. e.g. `"   foo   "`.
----@return boolean # If there is any non-whitespace, return `true`.
----
-function _P.is_whitespace(text)
-    return text:match("^%s*$") ~= nil
+function _P.is_section_header(section)
+    return section[1]:match("~$") ~= nil
 end
 
 --- Check if `text` is the start of a function's parameters.
@@ -66,6 +61,15 @@ end
 ---
 function _P.is_return_section(text)
     return text:match("%s*Return%s*~%s*")
+end
+
+--- Check if `text` contains only spaces / tabs.
+---
+---@param text string Some text to check. e.g. `"   foo   "`.
+---@return boolean # If there is any non-whitespace, return `true`.
+---
+function _P.is_whitespace(text)
+    return text:match("^%s*$") ~= nil
 end
 
 --- Find every line in `section` that has non-whitespace.
@@ -224,21 +228,14 @@ function _P.get_module_enabled_hooks(module_identifier)
                 return
             end
 
-            if section.info.id == "@field" and _P.is_field_section(section[1]) then
+            if section.info.id == "@field" and _P.is_field_section(section[1])
+                or section.info.id == "@param" and _P.is_parameter_section(section[1])
+            then
                 local previous_section = _P.get_previous_sibling(section)
 
                 if previous_section then
+                    _P.strip_trailing_newlines(previous_section)
                     _P.set_leading_newline(section)
-                    _P.set_leading_newline(_P.get_previous_sibling(previous_section))
-                end
-            end
-
-            if section.info.id == "@param" and _P.is_parameter_section(section[1]) then
-                local previous_section = _P.get_previous_sibling(section)
-
-                if previous_section then
-                    _P.set_leading_newline(section)
-                    _P.set_leading_newline(_P.get_previous_sibling(previous_section))
                 end
             end
 
@@ -453,7 +450,7 @@ end
 ---@return string # `"   foo"`.
 ---
 function _P.rstrip(text)
-    return text:gsub("%s+$", "")
+    return (text:gsub("%s+$", ""))
 end
 
 --- Add newlines to the start of `section` if needed.
@@ -506,6 +503,29 @@ function _P.strip_inline_return_escape_character(text)
     end
 
     return text
+end
+
+--- Remove all whitespace at the end of `section`, if any.
+---
+---@param section MiniDoc.Section The documentation to modify.
+---
+function _P.strip_trailing_newlines(section)
+    ---@type integer[]
+    local found = {}
+
+    for index=#section,1,-1 do
+        local line = section[index]
+
+        if not _P.is_whitespace(line) then
+            break
+        end
+
+        table.insert(found, index)
+    end
+
+    for _, index in ipairs(found) do
+        section[index] = nil
+    end
 end
 
 --- Remove any quotes around `text`.

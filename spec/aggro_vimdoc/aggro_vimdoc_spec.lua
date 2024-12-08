@@ -5,6 +5,8 @@
 
 local vimdoc = require("aggro.vimdoc")
 
+local _COUNTER = 1
+
 ---@type string[]
 local _DIRECTORIES_TO_DELETE = {}
 
@@ -52,10 +54,14 @@ end
 ---@return string # The file path on-disk that Vim made.
 ---
 local function _make_temporary_file(suffix)
-    local path = vim.fn.tempname() .. suffix
-    local directory = vim.fs.dirname(path)
+    -- NOTE: We need just the string for a directory name.
+    local directory = os.tmpname()
+    vim.fn.delete(directory)
+
+    local path = vim.fs.joinpath(directory, tostring(_COUNTER) .. suffix)
     table.insert(_DIRECTORIES_TO_DELETE, directory)
     vim.fn.mkdir(directory, "p")
+    _COUNTER = _COUNTER + 1
 
     return path
 end
@@ -98,7 +104,43 @@ describe("namespace replacements", function()
     after_each(_after_each)
 
     it("still works if the module has no `return` statement", function()
-        -- TODO: Finish
+        _run_test(
+            [[
+--- A module.
+---
+---@module 'foo.bar'
+---
+
+local M = {}
+
+--- Do something.
+---
+---@param value integer A thing.
+---@return string # Text.
+---
+function M.something(value)
+    return "stuff"
+end
+            ]],
+            [[
+==============================================================================
+------------------------------------------------------------------------------
+A module.
+
+------------------------------------------------------------------------------
+                                                                 *M.something()*
+
+`M.something`({value})
+
+Do something.
+
+Parameters ~
+    {value} `(integer)` A thing.
+
+Returns ~
+    `(string)` Text.
+]]
+        )
     end)
 
     it("works with functions - 001", function()
@@ -137,7 +179,7 @@ Do something.
 Parameters ~
     {value} `(integer)` A thing.
 
-Return ~
+Returns ~
     `(string)` Text.
 ]]
         )
@@ -177,7 +219,7 @@ Do something.
 Parameters ~
     {value} `(integer)` A thing.
 
-Return ~
+Returns ~
     `(string)` Text.
 ]]
         )
@@ -248,6 +290,9 @@ Fields ~
 end)
 
 describe("@field", function()
+    before_each(_silence_mini_doc)
+    after_each(_after_each)
+
     it("links custom @class / @alias / @enum", function()
         _run_test(
             [[
@@ -268,7 +313,7 @@ describe("@field", function()
 ==============================================================================
 ------------------------------------------------------------------------------
 *Foo*
-    And some text here.
+   And some text here.
 
 Fields ~
     {bar} SomeCustomType
@@ -287,7 +332,56 @@ Fields ~
 end)
 
 describe("@param", function()
+    before_each(_silence_mini_doc)
+    after_each(_after_each)
+
     it("links custom @class / @alias / @enum", function()
-    -- TODO: Finish
+        _run_test(
+            [[
+--- Do something.
+---
+---@param value integer A thing.
+---@param another CustomClass A thing.
+---@param foo _PrivateCustomClass A thing.
+---@param bar namespace.with._PrivateCustomClass A thing.
+---@param fizz namespace.with._private_module._PrivateCustomClass A thing.
+---@return string # Text.
+---@return CustomClass A thing.
+---@return _PrivateCustomClass # A thing.
+---@return namespace.with._PrivateCustomClass # A thing.
+---@return namespace.with._private_module._PrivateCustomClass # A thing.
+---
+function M.something(value)
+    return "stuff"
+end
+            ]],
+            [[
+asdfasasdfasfasfd
+==============================================================================
+------------------------------------------------------------------------------
+A module.
+
+------------------------------------------------------------------------------
+                                                             *M.something()*
+
+`M.something`({value})
+
+Do something.
+
+Parameters ~
+    {value} `(integer)` A thing.
+    {another} CustomClass A thing.
+    {foo} _PrivateCustomClass A thing.
+    {bar} namespace.with._PrivateCustomClass A thing.
+    {fizz} namespace.with._private_module._PrivateCustomClass A thing.
+
+Returns ~
+    `(string)` Text.
+    CustomClass A thing.
+    _PrivateCustomClass A thing.
+    namespace.with._PrivateCustomClass A thing.
+    namespace.with._private_module._PrivateCustomClass A thing.
+]]
+        )
     end)
 end)
