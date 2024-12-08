@@ -137,7 +137,7 @@ Do something.
 Parameters ~
     {value} `(integer)` A thing.
 
-Returns ~
+Return ~
     `(string)` Text.
 ]]
         )
@@ -179,7 +179,7 @@ Do something.
 Parameters ~
     {value} `(integer)` A thing.
 
-Returns ~
+Return ~
     `(string)` Text.
 ]]
         )
@@ -219,7 +219,7 @@ Do something.
 Parameters ~
     {value} `(integer)` A thing.
 
-Returns ~
+Return ~
     `(string)` Text.
 ]]
         )
@@ -335,7 +335,7 @@ describe("@param", function()
     before_each(_silence_mini_doc)
     after_each(_after_each)
 
-    it("links custom @class / @alias / @enum", function()
+    it("links custom @class / @alias / @enum #asdf", function()
         _run_test(
             [[
 --- Do something.
@@ -356,13 +356,9 @@ function M.something(value)
 end
             ]],
             [[
-asdfasasdfasfasfd
 ==============================================================================
 ------------------------------------------------------------------------------
-A module.
-
-------------------------------------------------------------------------------
-                                                             *M.something()*
+                                                                 *M.something()*
 
 `M.something`({value})
 
@@ -375,11 +371,19 @@ Parameters ~
     {bar} namespace.with._PrivateCustomClass A thing.
     {fizz} namespace.with._private_module._PrivateCustomClass A thing.
 
-Returns ~
+Return ~
     `(string)` Text.
+
+Return ~
     CustomClass A thing.
+
+Return ~
     _PrivateCustomClass A thing.
+
+Return ~
     namespace.with._PrivateCustomClass A thing.
+
+Return ~
     namespace.with._private_module._PrivateCustomClass A thing.
 ]]
         )
