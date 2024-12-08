@@ -19,6 +19,19 @@ local _LOGGER = logging.get_logger("aggro.vimdoc._core")
 
 local M = {}
 
+--- Check if `text` starts with whitespace.
+---
+---@param line string An text to check.
+---@return boolean # If `"   foo"`, return `true`.
+---
+function _P.has_indent(line)
+    if not line[1] then
+        return false
+    end
+
+    return line[1]:gmatch("^%s") == nil
+end
+
 --- Check if `text` is the start of a function's parameters.
 ---
 ---@param text string Some text. e.g. `"Parameters ~"`.
@@ -37,6 +50,15 @@ function _P.is_parameter_section(text)
     return text:match("%s*Parameters%s*~%s*")
 end
 
+--- Check if `text` contains only spaces / tabs.
+---
+---@param text string Some text to check. e.g. `"   foo   "`.
+---@return boolean # If there is any non-whitespace, return `true`.
+---
+function _P.is_whitespace(text)
+    return text:match("^%s*$") ~= nil
+end
+
 --- Check if `text` is the start of a function's parameters.
 ---
 ---@param text string Some text. e.g. `"Return ~"`.
@@ -44,6 +66,30 @@ end
 ---
 function _P.is_return_section(text)
     return text:match("%s*Return%s*~%s*")
+end
+
+--- Find every line in `section` that has non-whitespace.
+---
+--- Important:
+---     It's assumed that `section` starts with a non-whitespace line. If it
+---     doesn't, this function returns nothing.
+---
+---@param section string[] The text to checkj.
+---@return string[] # The found lines, if any.
+---
+function _P.get_consecutive_lines_with_text(section)
+    ---@type string[]
+    local output = {}
+
+    for _, line in ipairs(section) do
+        if _P.is_whitespace(line) then
+            break
+        end
+
+        table.insert(output, line)
+    end
+
+    return output
 end
 
 --- Get the last (contiguous) key in `data` that is numbered.
@@ -122,11 +168,26 @@ function _P.get_module_enabled_hooks(module_identifier)
         end
     end
 
+    local original_return_hook = hooks.sections["@return"]
+
+    -- NOTE: The mini.doc has no indentation by default. Add it.
+    hooks.sections["@return"] = function(section)
+        original_return_hook(section)
+
+        for index=2,#section do
+            local line = section[index]
+
+            if not _P.has_indent(line) then
+                section[index] = _P.indent(line)
+            end
+        end
+    end
+
     local original_signature_hook = hooks.sections["@signature"]
 
     hooks.sections["@signature"] = function(section)
-        if module_identifier then
-            _P.strip_function_identifier(section, module_identifier)
+        if module_identifier and module_name then
+            _P.replace_function_name(section, module_identifier, module_name)
         end
 
         _P.add_before_after_whitespace(section)
@@ -167,7 +228,8 @@ function _P.get_module_enabled_hooks(module_identifier)
                 local previous_section = section.parent[section.parent_index - 1]
 
                 if previous_section then
-                    _P.set_trailing_newline(section)
+                    _P.set_leading_newline(section)
+                    _P.set_leading_newline(previous_section)
                 end
             end
 
@@ -175,7 +237,8 @@ function _P.get_module_enabled_hooks(module_identifier)
                 local previous_section = section.parent[section.parent_index - 1]
 
                 if previous_section then
-                    _P.set_trailing_newline(previous_section)
+                    _P.set_leading_newline(section)
+                    _P.set_leading_newline(previous_section)
                 end
             end
 
@@ -183,17 +246,26 @@ function _P.get_module_enabled_hooks(module_identifier)
                 local previous_section = section.parent[section.parent_index - 1]
 
                 if previous_section then
-                    _P.set_trailing_newline(section)
+                    _P.set_leading_newline(section)
                 end
             end
         end, block)
     end
 
-    hooks.section_pre = function()
+    hooks.section_pre = function(section)
+        if section.info.id == "@return" then
+            local count = _P.get_consecutive_lines_with_text(section)
+
+            if #count ~= 1 then
+                return
+            end
+
+            section[1] = _P.strip_inline_return_escape_character(section[1])
+        end
     end
 
     hooks.write_pre = function(lines)
-        table.insert(lines, #lines - 1, "WARNING: This file is auto-generated. Do not edit it!")
+        table.insert(lines, #lines, "WARNING: This file is auto-generated. Do not edit it!")
 
         return lines
     end
@@ -364,7 +436,16 @@ function _P.replace_function_name(section, module_identifier, module_name)
     end
 end
 
---- Add newlines around `section` if needed.
+--- Remove trailing whitespace from `text`.
+---
+---@param text string The user text, e.g. `"   foo "`.
+---@return string # `"   foo"`.
+---
+function _P.rstrip(text)
+    return text:gsub("%s+$", "")
+end
+
+--- Add newlines to the start of `section` if needed.
 ---
 ---@param section MiniDoc.Section
 ---    The object to possibly modify.
@@ -372,25 +453,16 @@ end
 ---    The number of lines to put before `section` if needed. If the section
 ---    has more newlines than `count`, it is converted back to `count`.
 ---
-function _P.set_trailing_newline(section, count)
-    local function _is_not_whitespace(text)
-        return text:match("%S+")
-    end
-
+function _P.set_leading_newline(section, count)
     count = count or 1
-    local found_text = false
     local lines = 0
 
     for _, line in ipairs(section) do
-        if not found_text then
-            if _is_not_whitespace(line) then
-                found_text = true
-            end
-        elseif _is_not_whitespace(line) then
-            lines = 0
-        else
-            lines = lines + 1
+        if not _P.is_whitespace(line) then
+            break
         end
+
+        lines = lines + 1
     end
 
     if count > lines then
@@ -402,6 +474,27 @@ function _P.set_trailing_newline(section, count)
             section:remove(1)
         end
     end
+end
+
+--- Remove the `"# "` prefix from return `text` if there is some.
+---
+--- LuaCATs annotations expects a `#` if you add a comment on the `@return`
+--- block. e.g. `---@return string # foo bar.` But we don't want the `"# "` in
+--- the Vimdoc, so remove it.
+---
+--- https://luals.github.io/wiki/annotations/#return
+---
+---@param text string A return description (note: This might be empty).
+---@return string # The returned, modified text.
+---
+function _P.strip_inline_return_escape_character(text)
+    local before, after = text:match("(.*)#%s*(.*)")
+
+    if before and after then
+        return _P.rstrip(before) .. " " .. after
+    end
+
+    return text
 end
 
 --- Remove any quotes around `text`.

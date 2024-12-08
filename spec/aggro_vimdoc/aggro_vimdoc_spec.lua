@@ -77,7 +77,7 @@ local function _run_test(source_text, expected)
 
     -- NOTE: We ignore the last few lines because they are auto-generated.
     local raw = vim.fn.readfile(destination)
-    local found = vim.fn.join(_get_slice(raw, 1, math.max(#raw - 2, 1)), "\n")
+    local found = vim.fn.join(_get_slice(raw, 1, math.max(#raw - 3, 1)), "\n")
 
     assert.equal(expected, found)
 end
@@ -101,39 +101,85 @@ describe("namespace replacements", function()
         -- TODO: Finish
     end)
 
-    it("works with functions", function()
+    it("works with functions - 001", function()
         _run_test(
             [[
-    --- A module.
-    ---
-    ---@module 'foo.bar'
-    ---
+--- A module.
+---
+---@module 'foo.bar'
+---
 
-    local M = {}
+local M = {}
 
-    --- Do something.
-    ---
-    ---@param value integer A thing.
-    ---@return string # Text.
-    ---
-    function M.something(value)
-        return "stuff"
-    end
+--- Do something.
+---
+---@param value integer A thing.
+---@return string # Text.
+---
+function M.something(value)
+    return "stuff"
+end
 
-    return M
+return M
             ]],
             [[
-    ==============================================================================
-    ------------------------------------------------------------------------------
-                                                                 *foo.bar.something*
-    foo.bar.something({value})
+==============================================================================
+------------------------------------------------------------------------------
+A module.
 
-    Fields ~
+------------------------------------------------------------------------------
+                                                           *foo.bar.something()*
+
+`foo.bar.something`({value})
+
+Do something.
+
+Parameters ~
     {value} `(integer)` A thing.
 
-    Returns ~
+Return ~
     `(string)` Text.
-    ]]
+]]
+        )
+    end)
+
+    it("works with functions - 002", function()
+        _run_test(
+            [[
+--- A module.
+---
+---@module 'foo.bar'
+---
+
+local M = {}
+
+--- Do something.
+---@param value integer A thing.
+---@return string # Text.
+function M.something(value)
+    return "stuff"
+end
+
+return M
+            ]],
+            [[
+==============================================================================
+------------------------------------------------------------------------------
+A module.
+
+------------------------------------------------------------------------------
+                                                           *foo.bar.something()*
+
+`foo.bar.something`({value})
+
+Do something.
+
+Parameters ~
+    {value} `(integer)` A thing.
+
+Return ~
+    `(string)` Text.
+]]
         )
     end)
 end)
