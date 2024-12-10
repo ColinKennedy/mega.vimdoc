@@ -1,4 +1,4 @@
-*mega.vimdoc.txt*       For Neovim >= 0.8.0      Last change: 2024 December 08
+*mega.vimdoc.txt*       For Neovim >= 0.8.0      Last change: 2024 December 10
 
 ==============================================================================
 Table of Contents                              *mega.vimdoc-table-of-contents*
@@ -50,7 +50,10 @@ Convert Lua source code into Vimdoc syntax.
 >lua
     {
         "ColinKennedy/mega.vimdoc",
-        dependencies = { "echasnovski/mini.doc" },
+        dependencies = {
+            "ColinKennedy/mega.logging",  -- Recommended but optional
+            "echasnovski/mini.doc",  -- Required
+        },
         version = "v1.*",
     }
 <
