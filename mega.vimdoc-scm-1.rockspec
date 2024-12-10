@@ -11,6 +11,11 @@ description = {
     summary = 'A "Best Practices" Neovim plugin template',
 }
 
+dependencies = {
+    "mini.doc >= 0.14.0, < 1.0",
+    "mega.logging >= 1.0.0, < 2.0",
+}
+
 test_dependencies = {
     "busted >= 2.0, < 3.0",
     "lua >= 5.1, < 6.0",

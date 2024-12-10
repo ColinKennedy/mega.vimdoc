@@ -26,7 +26,10 @@ Convert Lua source code into Vimdoc syntax.
 ```lua
 {
     "ColinKennedy/mega.vimdoc",
-    dependencies = { "echasnovski/mini.doc" },
+    dependencies = {
+        "ColinKennedy/mega.logging",  -- Recommended but optional
+        "echasnovski/mini.doc",  -- Required
+    },
     version = "v1.*",
 }
 ```
