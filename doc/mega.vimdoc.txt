@@ -1,27 +1,19 @@
-*mega.vimdoc.txt*       For Neovim >= 0.8.0      Last change: 2024 December 10
+*mega.vimdoc.txt*       For Neovim >= 0.8.0      Last change: 2024 December 22
 
 ==============================================================================
 Table of Contents                              *mega.vimdoc-table-of-contents*
 
-1. Under Construction                        |mega.vimdoc-under-construction-|
-2. mega.vimdoc                                       |mega.vimdoc-mega.vimdoc|
-3. Features                                             |mega.vimdoc-features|
-4. Installation                                     |mega.vimdoc-installation|
-5. Tests                                                   |mega.vimdoc-tests|
+1. mega.vimdoc                                       |mega.vimdoc-mega.vimdoc|
+2. Features                                             |mega.vimdoc-features|
+3. Installation                                     |mega.vimdoc-installation|
+4. Tests                                                   |mega.vimdoc-tests|
   - Initialization                          |mega.vimdoc-tests-initialization|
   - Running                                        |mega.vimdoc-tests-running|
-6. Tracking Updates                             |mega.vimdoc-tracking-updates|
-7. Other Plugins                                   |mega.vimdoc-other-plugins|
+5. Tracking Updates                             |mega.vimdoc-tracking-updates|
+6. Other Plugins                                   |mega.vimdoc-other-plugins|
 
 ==============================================================================
-1. Under Construction                        *mega.vimdoc-under-construction-*
-
-Thisrepository is currently under construction. Please check back later for
-updates!
-
-
-==============================================================================
-2. mega.vimdoc                                       *mega.vimdoc-mega.vimdoc*
+1. mega.vimdoc                                       *mega.vimdoc-mega.vimdoc*
 
 Convert Lua source code into Vimdoc syntax.
 
@@ -37,7 +29,7 @@ Convert Lua source code into Vimdoc syntax.
   --------------------------------------------------------------------------------
 
 ==============================================================================
-3. Features                                             *mega.vimdoc-features*
+2. Features                                             *mega.vimdoc-features*
 
 - Links to custom classes
 - Auto-indents / formats code
@@ -45,7 +37,7 @@ Convert Lua source code into Vimdoc syntax.
 
 
 ==============================================================================
-4. Installation                                     *mega.vimdoc-installation*
+3. Installation                                     *mega.vimdoc-installation*
 
 >lua
     {
@@ -60,7 +52,7 @@ Convert Lua source code into Vimdoc syntax.
 
 
 ==============================================================================
-5. Tests                                                   *mega.vimdoc-tests*
+4. Tests                                                   *mega.vimdoc-tests*
 
 
 INITIALIZATION                              *mega.vimdoc-tests-initialization*
@@ -92,7 +84,7 @@ Run test based on tags
 
 
 ==============================================================================
-6. Tracking Updates                             *mega.vimdoc-tracking-updates*
+5. Tracking Updates                             *mega.vimdoc-tracking-updates*
 
 See doc/news.txt <doc/news.txt> for updates.
 
@@ -104,7 +96,7 @@ You can watch this plugin for changes by adding this URL to your RSS feed:
 
 
 ==============================================================================
-7. Other Plugins                                   *mega.vimdoc-other-plugins*
+6. Other Plugins                                   *mega.vimdoc-other-plugins*
 
 This template is full of various features. But if your plugin is only meant to
 be a simple plugin and you don’t want the bells and whistles that this
