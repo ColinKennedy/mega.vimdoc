@@ -1,8 +1,3 @@
-# 🚧 Under Construction 🚧
-
-This repository is currently under construction. Please check back later for updates!
-
-
 # mega.vimdoc
 
 Convert Lua source code into Vimdoc syntax.
