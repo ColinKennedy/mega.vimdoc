@@ -8,19 +8,40 @@ on:
   push:
     branches:
       - main
+      - add_windows_unittests
 
 jobs:
   test:
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
-        neovim: [v0.10.0, stable, nightly]
+        neovim: [v0.10.0]
+        os: []
+        luaVersion:
+        - "5.1"
+        - "5.2"
+        - "5.3"
+        - "5.4"
+        - "luajit"
+        - "luajit-openresty"
+        include:
+          - os: "windows-latest"
+            toolchain: "msvc"
+            luaVersion: "5.1"
+          - os: "windows-latest"
+            toolchain: "mingw"  # unused, other than for display in the UI
+            luaVersion: "luajit"
 
     runs-on: ${{ matrix.os }}
     name: "OS: ${{ matrix.os }} - Neovim: ${{ matrix.neovim }}"
 
     steps:
     - uses: actions/checkout@master
+
+    - name: Setup MSVC
+      # the 'hishamhm/gh-actions-lua' step requires msvc to build PuC Rio Lua
+      # versions on Windows (LuaJIT will be build using MinGW/gcc).
+      if: ${{ matrix.toolchain == 'msvc' }}
+      uses: ilammy/msvc-dev-cmd@v1
 
     - uses: leafo/gh-actions-lua@v10
       with:
@@ -32,7 +53,9 @@ jobs:
         #
         luaVersion: "luajit-openresty"
 
-    - uses: leafo/gh-actions-luarocks@v4
+    - uses: hishamhm/gh-actions-luarocks@v4
+      with:
+        luarocksVersion: "3.11.0"
 
     - uses: rhysd/action-setup-vim@v1
       with:
