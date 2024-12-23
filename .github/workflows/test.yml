@@ -39,7 +39,7 @@ jobs:
       if: ${{ matrix.toolchain == 'msvc' }}
       uses: ilammy/msvc-dev-cmd@v1
 
-    - uses: leafo/gh-actions-lua@v10
+    - uses: leafo/gh-actions-lua@master
       with:
         # Neovim is compiled with LuaJIT so we might as well match. But it
         # doesn't look like we can match it exactly.
