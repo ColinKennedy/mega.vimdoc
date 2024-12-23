@@ -15,14 +15,10 @@ jobs:
     strategy:
       matrix:
         neovim: [v0.10.0]
-        os: []
+        os: ["windows-latest"]
         luaVersion:
         - "5.1"
-        - "5.2"
-        - "5.3"
-        - "5.4"
         - "luajit"
-        - "luajit-openresty"
         include:
           - os: "windows-latest"
             toolchain: "msvc"
