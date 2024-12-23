@@ -49,7 +49,7 @@ jobs:
         #
         luaVersion: "luajit-openresty"
 
-    - uses: hishamhm/gh-actions-luarocks@v4
+    - uses: hishamhm/gh-actions-luarocks@v5
       with:
         luarocksVersion: "3.11.0"
 
