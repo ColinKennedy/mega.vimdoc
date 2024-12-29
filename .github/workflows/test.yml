@@ -56,7 +56,7 @@ jobs:
 
     - name: build
       run: |
-        luarocks test mega.vimdoc-scm-1.rockspec --prepare
+        luarocks --verbose test mega.vimdoc-scm-1.rockspec --prepare
 
     - name: test
       run: |
