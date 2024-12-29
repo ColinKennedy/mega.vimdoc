@@ -15,15 +15,6 @@ dependencies = {
     "luasystem >= 0.2.0, < 1.0",
 }
 
-test_dependencies = {
-}
-
--- Reference: https://github.com/luarocks/luarocks/wiki/test#test-types
-test = {
-    type = "busted",
-    flags = { "--helper", "spec/minimal_init.lua" },
-}
-
 source = {
     url = "git://github.com/" .. user .. "/" .. package,
 }
