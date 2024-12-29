@@ -54,6 +54,10 @@ jobs:
         neovim: true
         version: ${{ matrix.neovim }}
 
-    - name: Explicit luasystem install
+    - name: build
       run: |
-        luarocks --verbose install luasystem --local
+        luarocks test mega.vimdoc-scm-1.rockspec --prepare
+
+    - name: test
+      run: |
+        luarocks test --test-type busted
