@@ -11,10 +11,6 @@ description = {
     summary = 'A "Best Practices" Neovim plugin template',
 }
 
-dependencies = {
-    "luasystem >= 0.2.0, < 1.0",
-}
-
 source = {
     url = "git://github.com/" .. user .. "/" .. package,
 }
