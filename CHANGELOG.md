@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.0.2](https://github.com/ColinKennedy/mega.vimdoc/compare/v1.0.1...v1.0.2) (2025-01-08)
+
+
+### Bug Fixes
+
+* **ci:** get urlchecker to work ([016c7e6](https://github.com/ColinKennedy/mega.vimdoc/commit/016c7e61042178dadccb9e1b9ffe387e1b5a1422))
+* **logging:** added missing return ([8bd5529](https://github.com/ColinKennedy/mega.vimdoc/commit/8bd552906525b61d456cf715d8707d1d21a5d96c))
+* **rockspec:** added correct summary ([8bd5529](https://github.com/ColinKennedy/mega.vimdoc/commit/8bd552906525b61d456cf715d8707d1d21a5d96c))
+
 ## [1.0.1](https://github.com/ColinKennedy/mega.vimdoc/compare/v1.0.0...v1.0.1) (2024-12-10)
 
 
