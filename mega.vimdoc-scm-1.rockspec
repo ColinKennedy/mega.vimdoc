@@ -8,7 +8,7 @@ description = {
     homepage = "https://github.com/" .. user .. "/" .. package,
     labels = { "neovim", "neovim-plugin" },
     license = "MIT",
-    summary = 'A "Best Practices" Neovim plugin template',
+    summary = 'A Neovim plugin that converts Lua source code to vimdoc',
 }
 
 dependencies = {
@@ -23,10 +23,7 @@ test_dependencies = {
 }
 
 -- Reference: https://github.com/luarocks/luarocks/wiki/test#test-types
-test = {
-    type = "busted",
-    flags = { "--helper", "spec/minimal_init.lua" },
-}
+test = { type = "busted" }
 
 source = {
     url = "git://github.com/" .. user .. "/" .. package,
