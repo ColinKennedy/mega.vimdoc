@@ -408,7 +408,7 @@ describe("@param", function()
     before_each(_silence_mini_doc)
     after_each(_after_each)
 
-    it("links custom @class / @alias / @enum #asdf", function()
+    it("links custom @class / @alias / @enum", function()
         _run_test(
             [[
 --- Do something.

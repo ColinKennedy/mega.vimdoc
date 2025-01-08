@@ -4,7 +4,7 @@
 ---
 
 local success, logging = pcall(function()
-    require("mega.logging")
+    return require("mega.logging")
 end)
 
 if not success then

@@ -26,4 +26,4 @@ stylua:
 	stylua lua scripts spec
 
 test: clone_git_dependencies
-	busted --helper spec/minimal_init.lua .
+	busted .
