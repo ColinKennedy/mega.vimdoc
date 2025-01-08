@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.3](https://github.com/ColinKennedy/mega.vimdoc/compare/v1.0.2...v1.0.3) (2025-01-08)
+
+
+### Bug Fixes
+
+* **logging:** added missing return ([8bd5529](https://github.com/ColinKennedy/mega.vimdoc/commit/8bd552906525b61d456cf715d8707d1d21a5d96c))
+* **rockspec:** added correct summary ([8bd5529](https://github.com/ColinKennedy/mega.vimdoc/commit/8bd552906525b61d456cf715d8707d1d21a5d96c))
+
 ## [1.0.2](https://github.com/ColinKennedy/mega.vimdoc/compare/v1.0.1...v1.0.2) (2025-01-08)
 
 
