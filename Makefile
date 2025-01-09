@@ -10,6 +10,7 @@ else
 endif
 
 clone_git_dependencies:
+	git clone git@github.com:ColinKennedy/mega.logging.git .dependencies/mega.logging $(IGNORE_EXISTING)
 	git clone git@github.com:LuaCATS/busted.git .dependencies/busted $(IGNORE_EXISTING)
 	git clone git@github.com:LuaCATS/luassert.git .dependencies/luassert $(IGNORE_EXISTING)
 
