@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.4](https://github.com/ColinKennedy/mega.vimdoc/compare/v1.0.3...v1.0.4) (2025-01-12)
+
+
+### Bug Fixes
+
+* **rockspec:** added rockspec template ([cf8bc3d](https://github.com/ColinKennedy/mega.vimdoc/commit/cf8bc3d7bb97f830e0a2949e7963b7ec375e5040))
+
 ## [1.0.3](https://github.com/ColinKennedy/mega.vimdoc/compare/v1.0.2...v1.0.3) (2025-01-08)
 
 
