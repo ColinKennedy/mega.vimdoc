@@ -48,22 +48,50 @@ local function _reset_mini_doc()
     vim.notify = _ORIGINAL_VIM_NOTIFY
 end
 
---- Make a file ending in `suffix`.
----
----@param suffix string An ending name / file extension. e.g. `".lua"`.
----@return string # The file path on-disk that Vim made.
----
-local function _make_temporary_file(suffix)
-    -- NOTE: We need just the string for a directory name.
-    local directory = os.tmpname()
-    vim.fn.delete(directory)
 
-    local path = vim.fs.joinpath(directory, tostring(_COUNTER) .. suffix)
-    table.insert(_DIRECTORIES_TO_DELETE, directory)
-    vim.fn.mkdir(directory, "p")
-    _COUNTER = _COUNTER + 1
+local _make_temporary_file
 
-    return path
+if vim.fn.has("win32") == 1 then
+    -- NOTE: GitHub actions place temp files in a directory, C:\Users\RUNNER~1,
+    -- that Vim doesn't know how to read. So we need to redirect that temporary
+    -- directory that gets created.
+
+    --- Make a file ending in `suffix`.
+    ---
+    ---@param suffix string An ending name / file extension. e.g. `".lua"`.
+    ---@return string # The file path on-disk that Vim made.
+    ---
+    _make_temporary_file = function(suffix)
+        -- NOTE: We need just the string for a directory name.
+        local directory = os.tmpname()
+        vim.fn.delete(directory)
+        directory = vim.fs.joinpath(vim.fn.getcwd(), ".tmp.mega.vimdoc", vim.fs.basename(directory))
+
+        local path = vim.fs.joinpath(directory, tostring(_COUNTER) .. suffix)
+        table.insert(_DIRECTORIES_TO_DELETE, directory)
+        vim.fn.mkdir(directory, "p")
+        _COUNTER = _COUNTER + 1
+
+        return path
+    end
+else
+    --- Make a file ending in `suffix`.
+    ---
+    ---@param suffix string An ending name / file extension. e.g. `".lua"`.
+    ---@return string # The file path on-disk that Vim made.
+    ---
+    _make_temporary_file = function(suffix)
+        -- NOTE: We need just the string for a directory name.
+        local directory = os.tmpname()
+        vim.fn.delete(directory)
+
+        local path = vim.fs.joinpath(directory, tostring(_COUNTER) .. suffix)
+        table.insert(_DIRECTORIES_TO_DELETE, directory)
+        vim.fn.mkdir(directory, "p")
+        _COUNTER = _COUNTER + 1
+
+        return path
+    end
 end
 
 --- Fill a file with `source_text`, make documentation, and check it against `expected`.
