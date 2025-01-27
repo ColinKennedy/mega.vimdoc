@@ -1,3 +1,0 @@
-- Update the README.md
-- Add link fencing
-- Do the TODO notes

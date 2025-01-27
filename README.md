@@ -1,4 +1,4 @@
-# mega.vimdoc
+# 🐦 mega.vimdoc
 
 Convert Lua source code into Vimdoc syntax.
 
@@ -10,7 +10,7 @@ Convert Lua source code into Vimdoc syntax.
 
 
 
-# Features
+# ⚡️Features
 
 - Links to custom classes
 - Auto-indents / formats code
@@ -28,7 +28,7 @@ Convert Lua source code into Vimdoc syntax.
 | ![Before](https://github.com/user-attachments/assets/19eb0c3b-49ca-45c3-9e02-20ce6e411388) | ![After, Concealed](https://github.com/user-attachments/assets/f09330e8-25fb-4caa-8592-33679d9ec914) | ![After, Raw Text](https://github.com/user-attachments/assets/0e3d4f05-8c73-4375-8f63-96171c7c1bcd) |
 
 
-# Installation
+# 📋 Installation
 ```lua
 {
     "ColinKennedy/mega.vimdoc",
@@ -41,7 +41,7 @@ Convert Lua source code into Vimdoc syntax.
 ```
 
 
-# Tests
+# ✅ Tests
 ## Initialization
 Run this line once before calling any `busted` command
 
@@ -66,17 +66,10 @@ busted . --tags=simple
 ```
 
 
-# Tracking Updates
+# 👂 Tracking Updates
 See [doc/news.txt](doc/news.txt) for updates.
 
 You can watch this plugin for changes by adding this URL to your RSS feed:
 ```
 https://github.com/ColinKennedy/mega.vimdoc/commits/main/doc/news.txt.atom
 ```
-
-
-# Other Plugins
-This template is full of various features. But if your plugin is only meant to
-be a simple plugin and you don't want the bells and whistles that this template
-provides, consider instead using
-[nvim-plugin-template](https://github.com/ellisonleao/nvim-plugin-template)
