@@ -16,6 +16,17 @@ Convert Lua source code into Vimdoc syntax.
 - Auto-indents / formats code
 - Auto-replaces Lua namespaces with the module path
 
+## Gallery
+### Class
+| Before                                                                                     | After, Concealed                                                                                     | After, Raw Text                                                                                     |
+|--------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------|
+| ![Before](https://github.com/user-attachments/assets/926d1a49-c361-4b24-81ef-bf41e9da5470) | ![After, Concealed](https://github.com/user-attachments/assets/543ee82a-eb8e-4c19-9a30-0f13df39fa7e) | ![After, Raw Text](https://github.com/user-attachments/assets/366e8fc0-bc27-4fb6-bdeb-eedfa5bbd207) |
+
+### Function
+| Before                                                                                     | After, Concealed                                                                                     | After, Raw Text                                                                                     |
+|--------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------|
+| ![Before](https://github.com/user-attachments/assets/19eb0c3b-49ca-45c3-9e02-20ce6e411388) | ![After, Concealed](https://github.com/user-attachments/assets/f09330e8-25fb-4caa-8592-33679d9ec914) | ![After, Raw Text](https://github.com/user-attachments/assets/0e3d4f05-8c73-4375-8f63-96171c7c1bcd) |
+
 
 # Installation
 ```lua
