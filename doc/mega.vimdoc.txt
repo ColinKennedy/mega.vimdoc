@@ -5,6 +5,7 @@ Table of Contents                              *mega.vimdoc-table-of-contents*
 
 1. mega.vimdoc                                       |mega.vimdoc-mega.vimdoc|
 2. Features                                             |mega.vimdoc-features|
+  - Gallery                                     |mega.vimdoc-features-gallery|
 3. Installation                                     |mega.vimdoc-installation|
 4. Tests                                                   |mega.vimdoc-tests|
   - Initialization                          |mega.vimdoc-tests-initialization|
@@ -35,6 +36,27 @@ Convert Lua source code into Vimdoc syntax.
 - Auto-indents / formats code
 - Auto-replaces Lua namespaces with the module path
 
+
+GALLERY                                         *mega.vimdoc-features-gallery*
+
+
+CLASS ~
+
+  ------------------------------------------------------------------------
+  Before                 After, Concealed         After, Raw Text
+  ---------------------- ------------------------ ------------------------
+  [Before]               [After, Concealed]       [After, Raw Text]
+
+  ------------------------------------------------------------------------
+
+FUNCTION ~
+
+  ------------------------------------------------------------------------
+  Before                 After, Concealed         After, Raw Text
+  ---------------------- ------------------------ ------------------------
+  [Before]               [After, Concealed]       [After, Raw Text]
+
+  ------------------------------------------------------------------------
 
 ==============================================================================
 3. Installation                                     *mega.vimdoc-installation*
