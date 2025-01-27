@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.5](https://github.com/ColinKennedy/mega.vimdoc/compare/v1.0.4...v1.0.5) (2025-01-27)
+
+
+### Bug Fixes
+
+* **tag:** prevent duplicate tags with ---[@class](https://github.com/class) ([ef0fe13](https://github.com/ColinKennedy/mega.vimdoc/commit/ef0fe1365648920824787d2f9fc2dbf09e06a721))
+
 ## [1.0.4](https://github.com/ColinKennedy/mega.vimdoc/compare/v1.0.3...v1.0.4) (2025-01-12)
 
 
