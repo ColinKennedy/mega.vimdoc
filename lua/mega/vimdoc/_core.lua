@@ -138,12 +138,24 @@ function _P.get_module_enabled_hooks(module_identifier)
 
     local hooks = vim.deepcopy(doc.default_hooks)
 
+    local seen_tags = {}
+
     hooks.sections["@class"] = function(section)
         if #section == 0 or section.type ~= "section" then
             return
         end
 
-        section[1] = _P.add_tag(section[1])
+        local class_name = section[1]
+
+        if vim.tbl_contains(seen_tags, class_name) then
+            section:clear_lines()
+
+            return
+        end
+
+        table.insert(seen_tags, class_name)
+
+        section[1] = _P.add_tag(class_name)
     end
 
     local original_field_hook = hooks.sections["@field"]
@@ -211,6 +223,14 @@ function _P.get_module_enabled_hooks(module_identifier)
             _P.replace_function_name(section, module_identifier, module_name)
         end
 
+        local tag_name = section[1]
+
+        if vim.tbl_contains(seen_tags, tag_name) then
+            return
+        end
+
+        table.insert(seen_tags, tag_name)
+
         original_tag_hook(section)
     end
 
@@ -250,7 +270,11 @@ function _P.get_module_enabled_hooks(module_identifier)
         end, block)
     end
 
+    local original_section_pre_hook = hooks.section_pre
+
     hooks.section_pre = function(section)
+        original_section_pre_hook(section)
+
         if section.info.id == "@return" then
             local count = _P.get_consecutive_lines_with_text(section)
 
