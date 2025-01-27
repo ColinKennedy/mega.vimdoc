@@ -126,6 +126,55 @@ local function _after_each()
     _DIRECTORIES_TO_DELETE = {}
 end
 
+describe("general", function()
+    it("hides private functions by default #simple", function()
+        _run_test(
+            [[
+--- A module.
+---
+---@module 'foo.bar'
+---
+
+local M = {}
+local _P = {}
+
+---@return string # This function does things
+---@private
+function _P.another_function()
+    return "asdfsafd"
+end
+
+--- Do something.
+---
+---@param value integer A thing.
+---@return string # Text.
+---
+function M.something(value)
+    return "stuff"
+end
+            ]],
+            [[
+==============================================================================
+------------------------------------------------------------------------------
+A module.
+
+------------------------------------------------------------------------------
+                                                                 *M.something()*
+
+`M.something`({value})
+
+Do something.
+
+Parameters ~
+    {value} `(integer)` A thing.
+
+Return ~
+    `(string)` Text.
+]]
+        )
+    end)
+end)
+
 describe("namespace replacements", function()
     before_each(_silence_mini_doc)
     after_each(_after_each)
