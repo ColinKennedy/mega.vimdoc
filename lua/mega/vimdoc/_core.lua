@@ -15,6 +15,10 @@ if _G.MiniDoc == nil then
     doc.setup()
 end
 
+if not _P.has_treesitter_parser("luadoc") then
+    error("No luadoc tree-sitter parser was found.")
+end
+
 ---@type integer?
 local _SCRATCH_BUFFER
 
@@ -237,11 +241,7 @@ function _P.get_module_enabled_hooks(module_identifier)
     hooks.sections["@param"] = function(section)
         _P.mark_optional(section)
         _P.enclose_variable_name(section)
-
-        if _P.has_treesitter_parser("luadoc") then
-            -- TODO: Add a check for luadoc here. That parser must be available.
-            _P.enclose_custom_types(section)
-        end
+        _P.enclose_custom_types(section)
 
         for index, line in ipairs(section) do
             section[index] = _P.indent(line)
