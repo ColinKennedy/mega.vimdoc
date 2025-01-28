@@ -302,6 +302,74 @@ Return ~
     end)
 end)
 
+describe("tagging", function()
+    describe("---@class", function()
+        it("works with fields - built-in", function()
+            -- TODO: Finish
+        end)
+
+        it("works with fields - compound type", function()
+            -- TODO: Finish
+        end)
+
+        it("works with fields - custom thing (class, function, etc)", function()
+            -- TODO: Finish
+        end)
+
+        it("works with fields - function - complex", function()
+            -- TODO: Finish
+        end)
+
+        it("works with fields - simple", function()
+            -- TODO: Finish
+        end)
+    end)
+
+    describe("---@param", function()
+        it("works with parameters - built-in", function()
+            -- TODO: Finish
+        end)
+
+        it("works with parameters - compound type", function()
+            -- TODO: Finish
+        end)
+
+        it("works with parameters - custom thing (class, function, etc)", function()
+            -- TODO: Finish
+        end)
+
+        it("works with parameters - function - complex", function()
+            -- TODO: Finish
+        end)
+
+        it("works with parameters - simple", function()
+            -- TODO: Finish
+        end)
+    end)
+
+    describe("---@return", function()
+        it("works with returns - built-in", function()
+            -- TODO: Finish
+        end)
+
+        it("works with returns - compound type", function()
+            -- TODO: Finish
+        end)
+
+        it("works with returns - custom thing (class, function, etc)", function()
+            -- TODO: Finish
+        end)
+
+        it("works with returns - function - complex", function()
+            -- TODO: Finish
+        end)
+
+        it("works with returns - simple", function()
+            -- TODO: Finish
+        end)
+    end)
+end)
+
 describe("@class", function()
     before_each(_silence_mini_doc)
     after_each(_after_each)

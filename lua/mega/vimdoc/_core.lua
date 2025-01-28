@@ -15,6 +15,9 @@ if _G.MiniDoc == nil then
     doc.setup()
 end
 
+---@type integer?
+local _SCRATCH_BUFFER
+
 local _LOGGER = logging.get_logger("mega.vimdoc._core")
 
 local M = {}
@@ -30,6 +33,31 @@ function _P.has_indent(line)
     end
 
     return line[1]:gmatch("^%s") == nil
+end
+
+
+--- Make sure `language` is installed and findable with Neovim's tree-sitter library.
+---
+---@source https://github.com/nvim-telescope/telescope.nvim/blob/415af52339215926d705cccc08145f3782c4d132/lua/telescope/utils.lua#L676C1-L682C4
+---
+---@param language string The name of the tree-sitter parser. e.g. `"lua"`, `"python"`.
+---@return boolean # If found, return `true`.
+---
+function _P.has_treesitter_parser(language)
+  if vim.fn.has "nvim-0.11" == 1 then
+    return vim.treesitter.language.add(language) or false
+  else
+    return pcall(vim.treesitter.language.add, language)
+  end
+end
+
+--- Check if `name` is a built-in Lua type or something that a user made.
+---
+---@param name string The type name. e.g. `"number"`, `"something.Custom"`, etc.
+---@return boolean # If `true`, it means that `name` is not built-in.
+---
+function _P.is_custom_type(name)
+    error("STOP CUSTOM TYPe")
 end
 
 --- Check if `text` is the start of a function's parameters.
@@ -70,6 +98,38 @@ end
 ---
 function _P.is_whitespace(text)
     return text:match("^%s*$") ~= nil
+end
+
+--- Get all children starting from `root`.
+---
+--- Important:
+---     This function is *inclusive* (the `root` is the first returned item).
+---
+---@param root TSNode Some tree-sitter node to start from.
+---@return TSNode[] # The `root` and all found children, if any.
+---
+function _P.get_all_named_children(root)
+    ---@type TSNode[]
+    local stack = { root }
+    ---@type TSNode[]
+    local output = {}
+
+    while not vim.tbl_isempty(stack) do
+        local current = table.remove(stack)
+        local children = current:named_children()
+
+        ---@type TSNode[]
+        local reversed_children = {}
+
+        for index = #children, 1, -1 do
+            table.insert(reversed_children, children[index])
+        end
+
+        table.insert(output, current)
+        vim.list_extend(stack, reversed_children)
+    end
+
+    return output
 end
 
 --- Find every line in `section` that has non-whitespace.
@@ -174,10 +234,14 @@ function _P.get_module_enabled_hooks(module_identifier)
         section:clear_lines()
     end
 
-    local original_param_hook = hooks.sections["@param"]
-
     hooks.sections["@param"] = function(section)
-        original_param_hook(section)
+        _P.mark_optional(section)
+        _P.enclose_variable_name(section)
+
+        if _P.has_treesitter_parser("luadoc") then
+            -- TODO: Add a check for luadoc here. That parser must be available.
+            _P.enclose_custom_types(section)
+        end
 
         for index, line in ipairs(section) do
             section[index] = _P.indent(line)
@@ -435,6 +499,94 @@ function _P.add_tag(text)
     return (text:gsub("(%S+)", "%*%1%*"))
 end
 
+--- Find all type names for the type signature of `section`.
+---
+--- Raises:
+---     If our depedency, the luadoc tree-sitter, cannot be loaded.
+---
+---@param section MiniDoc.Section A renderable blob of documentation text.
+---@return string[] # Every type found, if any.
+---
+function _P.get_type_identifiers(section)
+    local function _is_type_identifier(node)
+        if node:parent().type ~= "parameter" then
+            return false
+        end
+
+        error("CONTINUE")
+    end
+
+    if not _SCRATCH_BUFFER then
+        _SCRATCH_BUFFER = vim.api.nvim_create_buf(false, true)
+    end
+
+    ---@type string[]
+    local lines = {}
+
+    for _, line in ipairs(section) do
+        table.insert(lines, line)
+    end
+
+    vim.api.nvim_buf_set_lines(_SCRATCH_BUFFER, 0, -1, false, lines)
+
+    local language = vim.treesitter.language.get_lang("luadoc")
+    local parser = vim.treesitter.get_parser(_SCRATCH_BUFFER, language)
+
+    if not parser then
+        error("Cannot load luadoc scratch buffer.")
+    end
+
+    local tree = parser:parse()[1]
+    local root = tree:root()
+
+    ---@type string[]
+    local output = {}
+
+    for _, child in ipairs(_P.get_all_named_children(root)) do
+        if child:type() == "identifier" and _is_type_identifier(child) then
+            local text = vim.treesitter.get_node_text(child, _SCRATCH_BUFFER)
+            table.insert(output, text)
+        end
+    end
+
+    return output
+end
+
+--- Wrap all type names found in `section` with || or ()s.
+---
+---@param section MiniDoc.Section A renderable blob of documentation text.
+---
+function _P.enclose_custom_types(section)
+    local names = _P.get_type_identifiers(section)
+    table.sort(names, function(left, right)
+        return left[1] > right[1]
+    end)
+
+    for index = 1, #section do
+        for _, name in ipairs(names) do
+            local template = "`(%s)`"
+
+            if _P.is_custom_type(name) then
+                template = "|%s|"
+            end
+
+            section[index] = section[index]:gsub(name, string.format(template, name))
+        end
+    end
+end
+
+--- Wrap the user-provided variable identifier in {}s.
+---
+---@param section MiniDoc.Section A renderable blob of documentation text.
+---
+function _P.enclose_variable_name(section)
+    if #section == 0 or section.type ~= "section" then
+        return
+    end
+
+    section[1] = section[1]:gsub("(%S+)", "{%1}", 1)
+end
+
 --- Add leading whitespace to `text`, if `text` is not an empty line.
 ---
 ---@param text string The text to modify, maybe.
@@ -446,6 +598,17 @@ function _P.indent(text)
     end
 
     return "    " .. text
+end
+
+--- Indicate of the parameter is optional.
+---
+---@param section MiniDoc.Section A renderable blob of documentation text.
+---
+function _P.mark_optional(section)
+    -- Treat question mark at end of first word as "optional" indicator.
+    -- See: https://github.com/sumneko/lua-language-server/wiki/EmmyLua-Annotations#optional-params
+    --
+    section[1] = section[1]:gsub("^(%s-%S-)%?", "%1 `(optional)`", 1)
 end
 
 --- Change the function name in `section` from `module_identifier` to `module_name`.
