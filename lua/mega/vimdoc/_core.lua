@@ -8,6 +8,9 @@ if not success then
     error("mini.doc is required to run mega.vimdoc. Please clone + source https://github.com/echasnovski/mini.doc", 0)
 end
 
+---@type mega.vimdoc.AutoDocumentationOptions
+local _DEFAULT_OPTIONS = { enable_module_in_signature = true }
+
 local _P = {}
 
 ---@diagnostic disable-next-line: undefined-field
@@ -15,6 +18,7 @@ if _G.MiniDoc == nil then
     doc.setup()
 end
 
+local _IS_WINDOWS = vim.fn.has("win32") or vim.fn.has("win64")
 local _LOGGER = logging.get_logger("mega.vimdoc._core")
 
 local M = {}
@@ -125,17 +129,51 @@ function _P.get_last_numeric_key(data)
     return found
 end
 
+--- Find all matching `"foo.bar.fizz.buzz"` namespaces from some absolute `path`.
+---
+--- Assuming `package.path` is `"/root/here/foo/bar/fizz/?.lua;;"`, the return
+--- would be `"buzz"`.
+---
+---@param path string Some Lua file. e.g. `"/root/here/foo/bar/fizz/buzz.lua"`.
+---@return string[] # All found matches, if any.
+---
+function _P.get_lua_package_path_namespace_matches(path)
+    path = vim.fs.normalize(path)
+    local lua_path_separator = ";"
+
+    ---@type string[]
+    local output = {}
+
+    for _, expression in ipairs(vim.split(package.path, lua_path_separator)) do
+        -- NOTE: A typical package.path contains `"foo;;"` so `expression` may
+        -- actually be an empty string. Just skip it if so.
+        --
+        if expression ~= "" then
+            local lua_pattern = (expression:gsub("%?", "(.*)"))
+            local match = path:match("^" .. lua_pattern .. "$")
+
+            if match then
+                table.insert(output, ((match:gsub("/", ".")):gsub("%.lua$", "")))
+            end
+        end
+    end
+
+    return output
+end
+
 --- Create the callbacks that we need to create our documentation.
 ---
 ---@param module_identifier string?
 ---    If provided, any reference to this identifier (e.g. `"M"`) will be
 ---    replaced with the real import path.
+---@param module_path string?
+---    The dot-separated path showing how to import the module. e.g. `"mega.vimdoc"`.
+---@param options mega.vimdoc.AutoDocumentationOptions?
+---    Customize the output using these settings, if needed.
 ---@return MiniDoc.Hooks
 ---    All of the generated callbacks.
 ---
-function _P.get_module_enabled_hooks(module_identifier)
-    local module_name = nil
-
+function _P.get_module_enabled_hooks(module_identifier, module_path, options)
     local hooks = vim.deepcopy(doc.default_hooks)
 
     local seen_tags = {}
@@ -168,8 +206,8 @@ function _P.get_module_enabled_hooks(module_identifier)
         end
     end
 
-    hooks.sections["@module"] = function(section)
-        module_name = _P.strip_quotes(section[1])
+    hooks.sections["@meta"] = function(section)
+        module_path = section[1]
 
         section:clear_lines()
     end
@@ -202,8 +240,12 @@ function _P.get_module_enabled_hooks(module_identifier)
     local original_signature_hook = hooks.sections["@signature"]
 
     hooks.sections["@signature"] = function(section)
-        if module_identifier and module_name then
-            _P.replace_function_name(section, module_identifier, module_name)
+        if module_identifier then
+            if not options or options.enable_module_in_signature then
+                _P.replace_function_name(section, module_identifier, module_path)
+            else
+                _P.replace_function_name(section, module_identifier, "")
+            end
         end
 
         _P.add_before_after_whitespace(section)
@@ -219,8 +261,8 @@ function _P.get_module_enabled_hooks(module_identifier)
     local original_tag_hook = hooks.sections["@tag"]
 
     hooks.sections["@tag"] = function(section)
-        if module_identifier and module_name then
-            _P.replace_function_name(section, module_identifier, module_name)
+        if module_identifier and module_path then
+            _P.replace_function_name(section, module_identifier, module_path)
         end
 
         local tag_name = section[1]
@@ -362,6 +404,45 @@ end
 --     return nil
 -- end
 
+--- Find the dot-separated way to import and use `path`.
+---
+---@param path string
+---    An absolute path to a .lua file. e.g. `"/root/here/mega/vimdoc/init.lua"`.
+---@return string?
+---    The dot-separated path showing how to import the module. e.g. `"mega.vimdoc"`.
+---
+function _P.get_module_namespace(path)
+    path = vim.fs.normalize(path)
+    ---@type string[]
+    local namespaces = {}
+
+    vim.list_extend(namespaces, _P.get_vim_runtime_namespace_matches(path))
+    vim.list_extend(namespaces, _P.get_lua_package_path_namespace_matches(path))
+
+    if vim.tbl_isempty(namespaces) then
+        _LOGGER:fmt_error('No namespace was found for "%s" path.', path)
+
+        return nil
+    end
+
+    if #namespaces == 1 then
+        local namespace = namespaces[1]
+        _LOGGER:fmt_info('Found "%s" namespace.', namespace)
+
+        return namespace
+    end
+
+    table.sort(namespaces, function(left, right)
+        return #left > #right and left > right
+    end)
+    _LOGGER:fmt_warning(
+        'Found multiple possible namespaces "%s". ' .. "We will now choose the longest possible match.",
+        namespaces
+    )
+
+    return namespaces[1]
+end
+
 --- Find the sibling that comes before `section`, if any.
 ---
 ---@param section MiniDoc.Section
@@ -398,6 +479,30 @@ function _P.get_return_node(buffer)
     end
 
     return return_node
+end
+
+--- Search all Vim plugins for importablue Lua files that match `path`.
+---
+---@param path string
+---    An absolute path to a .lua file.
+---    e.g. `"/root/plugins/mega.vimdoc/lua/mega/vimdoc/init.lua"`.
+---@return string[]
+---    All found matches. e.g. `"mega.vimdoc"`.
+---
+function _P.get_vim_runtime_namespace_matches(path)
+    ---@type string[]
+    local output = {}
+
+    for _, root in ipairs(vim.api.nvim_list_runtime_paths()) do
+        local relative = _P.relpath(root, path)
+
+        if relative and vim.startswith(relative, "lua/") then
+            local inner_path = relative:sub(5, #relative)
+            table.insert(output, _P.to_lua_namespace(inner_path))
+        end
+    end
+
+    return output
 end
 
 --- Ensure there is one blank space around `section` by modifying it.
@@ -448,7 +553,55 @@ function _P.indent(text)
     return "    " .. text
 end
 
---- Change the function name in `section` from `module_identifier` to `module_name`.
+--- Make a temporary Vim buffer and fill it with the data from `path`.
+---
+---@param path string A file on-disk to read as temporary buffer data.
+---@return integer # A 1-or-more value. The created Vim buffer.
+---
+function _P.make_temporary_buffer(path)
+    local lines = vim.fn.readfile(path)
+    local buffer = vim.api.nvim_create_buf(false, true)
+    vim.api.nvim_buf_set_lines(buffer, 0, -1, false, lines)
+
+    return buffer
+end
+
+-- TODO: relpath is only available in Vim 0.11+.
+-- Remove this block once we drop 0.10 support
+--
+if vim.fs.relpath then
+    _P.relpath = vim.fs.relpath
+else
+    --- Gets `target` path relative to `base`, or `nil` if `base` is not an ancestor.
+    ---
+    --- Example:
+    ---
+    --- ```lua
+    --- vim.fs.relpath('/var', '/var/lib') -- 'lib'
+    --- vim.fs.relpath('/var', '/usr/bin') -- nil
+    --- ```
+    ---
+    --- @param base string
+    --- @param target string
+    --- @return string|nil
+    function _P.relpath(base, target)
+        base = vim.fs.normalize(vim.fn.fnamemodify(base, ":p"))
+        target = vim.fs.normalize(vim.fn.fnamemodify(target, ":p"))
+        if base == target then
+            return "."
+        end
+
+        local prefix = ""
+        if _IS_WINDOWS then
+            prefix, base = _P.split_windows_path(base)
+        end
+        base = prefix .. base .. (base ~= "/" and "/" or "")
+
+        return vim.startswith(target, base) and target:sub(#base + 1) or nil
+    end
+end
+
+--- Change the function name in `section` from `module_identifier` to `module_path`.
 ---
 ---@param section MiniDoc.Section
 ---    A renderable blob of text (which will later auto-create into documentation).
@@ -456,12 +609,20 @@ end
 ---@param module_identifier string
 ---    Usually a function in Lua is defined with `function M.foo`. In this
 ---    example, `module_identifier` would be the `M` part.
----@param module_name string
----    The real name for the module. e.g. `"mega.vimdoc"`.
+---@param module_path string?
+---    The dot-separated path showing how to import the module. e.g. `"mega.vimdoc"`.
 ---
-function _P.replace_function_name(section, module_identifier, module_name)
-    local prefix = string.format("^%s%%.", module_identifier)
-    local replacement = string.format("%s.", module_name)
+function _P.replace_function_name(section, module_identifier, module_path)
+    if not vim.endswith(module_identifier, ".") then
+        module_identifier = module_identifier .. vim.pesc(".")
+    end
+
+    local prefix = string.format("^%s", module_identifier)
+    local replacement = ""
+
+    if module_path and module_path ~= "" then
+        replacement = string.format("%s.", module_path)
+    end
 
     for index, line in ipairs(section) do
         line = line:gsub(prefix, replacement)
@@ -507,6 +668,77 @@ function _P.set_leading_newline(section, count)
             section:remove(1)
         end
     end
+end
+
+-- TODO: relpath is only available in Vim 0.11+.
+-- Remove this function once we drop Vim 0.10.
+--
+--- Split a Windows path into a prefix and a body, such that the body can be processed like a POSIX
+--- path. The path must use forward slashes as path separator.
+---
+--- Does not check if the path is a valid Windows path. Invalid paths will give invalid results.
+---
+--- Examples:
+--- - `//./C:/foo/bar` -> `//./C:`, `/foo/bar`
+--- - `//?/UNC/server/share/foo/bar` -> `//?/UNC/server/share`, `/foo/bar`
+--- - `//./system07/C$/foo/bar` -> `//./system07`, `/C$/foo/bar`
+--- - `C:/foo/bar` -> `C:`, `/foo/bar`
+--- - `C:foo/bar` -> `C:`, `foo/bar`
+---
+--- @param path string Path to split.
+--- @return string, string, boolean : prefix, body, whether path is invalid.
+function _P.split_windows_path(path)
+    local prefix = ""
+
+    --- Match pattern. If there is a match, move the matched pattern from the path to the prefix.
+    --- Returns the matched pattern.
+    ---
+    --- @param pattern string Pattern to match.
+    --- @return string|nil Matched pattern
+    local function match_to_prefix(pattern)
+        local match = path:match(pattern)
+
+        if match then
+            prefix = prefix .. match --[[ @as string ]]
+            path = path:sub(#match + 1)
+        end
+
+        return match
+    end
+
+    local function process_unc_path()
+        return match_to_prefix("[^/]+/+[^/]+/+")
+    end
+
+    if match_to_prefix("^//[?.]/") then
+        -- Device paths
+        local device = match_to_prefix("[^/]+/+")
+
+        -- Return early if device pattern doesn't match, or if device is UNC and it's not a valid path
+        if not device or (device:match("^UNC/+$") and not process_unc_path()) then
+            return prefix, path, false
+        end
+    elseif match_to_prefix("^//") then
+        -- Process UNC path, return early if it's invalid
+        if not process_unc_path() then
+            return prefix, path, false
+        end
+    elseif path:match("^%w:") then
+        -- Drive paths
+        prefix, path = path:sub(1, 2), path:sub(3)
+    end
+
+    -- If there are slashes at the end of the prefix, move them to the start of the body. This is to
+    -- ensure that the body is treated as an absolute path. For paths like C:foo/bar, there are no
+    -- slashes at the end of the prefix, so it will be treated as a relative path, as it should be.
+    local trailing_slash = prefix:match("/+$")
+
+    if trailing_slash then
+        prefix = prefix:sub(1, -1 - #trailing_slash)
+        path = trailing_slash .. path --[[ @as string ]]
+    end
+
+    return prefix, path, true
 end
 
 --- Remove the `"# "` prefix from return `text` if there is some.
@@ -582,17 +814,19 @@ function _P.strip_function_identifier(section, module_identifier)
     end
 end
 
---- Make a temporary Vim buffer and fill it with the data from `path`.
+--- Replace a relative path like `"foo/bar/thing.lua"` to `"foo.bar.thing"`.
 ---
----@param path string A file on-disk to read as temporary buffer data.
----@return integer # A 1-or-more value. The created Vim buffer.
+---@param text string Some relaive path on-disk.
+---@return string # The converted namespace that can be `require("foo.bar.thing")`.
 ---
-function _P.make_temporary_buffer(path)
-    local lines = vim.fn.readfile(path)
-    local buffer = vim.api.nvim_create_buf(false, true)
-    vim.api.nvim_buf_set_lines(buffer, 0, -1, false, lines)
+function _P.to_lua_namespace(text)
+    local lua_reserved_module_name = "init.lua"
 
-    return buffer
+    if vim.endswith(text, lua_reserved_module_name) then
+        text = text:sub(1, #text - #lua_reserved_module_name - 1)
+    end
+
+    return (text:gsub("/", "."):gsub("%.lua$", ""))
 end
 
 --- Make sure `paths` can be processed by this script.
@@ -617,8 +851,11 @@ end
 ---
 ---@param paths mega.vimdoc.AutoDocumentationEntry[]
 ---    All of the source + destination pairs to process.
+---@param options mega.vimdoc.AutoDocumentationOptions?
+---    Customize the output using these settings, if needed.
 ---
-function M.make_documentation_files(paths)
+function M.make_documentation_files(paths, options)
+    options = vim.tbl_deep_extend("force", _DEFAULT_OPTIONS, options or {})
     _P.validate_paths(paths)
 
     for _, entry in ipairs(paths) do
@@ -626,7 +863,8 @@ function M.make_documentation_files(paths)
         local destination = entry.destination
 
         local module_identifier = _P.get_module_identifier(source)
-        local hooks = _P.get_module_enabled_hooks(module_identifier)
+        local module_path = _P.get_module_namespace(source)
+        local hooks = _P.get_module_enabled_hooks(module_identifier, module_path, options)
 
         doc.generate({ source }, destination, { hooks = hooks })
     end
