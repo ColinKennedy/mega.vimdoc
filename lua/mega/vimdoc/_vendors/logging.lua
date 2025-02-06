@@ -1,7 +1,4 @@
 --- The internal logger - Use the supported dependency or our own.
----
----@module 'mega.vimdoc._vendors.logging'
----
 
 local success, logging = pcall(function()
     return require("mega.logging")
@@ -15,8 +12,4 @@ if not logging then
     error("Can't continue - no logging module could be found!")
 end
 
-local M = {}
-
-M.get_logger = logging.get_logger
-
-return M
+return logging

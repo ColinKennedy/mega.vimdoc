@@ -11,5 +11,6 @@ mega.vimdoc-tests-initialization	mega.vimdoc.txt	/*mega.vimdoc-tests-initializat
 mega.vimdoc-tests-running	mega.vimdoc.txt	/*mega.vimdoc-tests-running*
 mega.vimdoc-tracking-updates	mega.vimdoc.txt	/*mega.vimdoc-tracking-updates*
 mega.vimdoc.AutoDocumentationEntry	mega_vimdoc_types.txt	/*mega.vimdoc.AutoDocumentationEntry*
+mega.vimdoc.AutoDocumentationOptions	mega_vimdoc_types.txt	/*mega.vimdoc.AutoDocumentationOptions*
 mega.vimdoc.make_documentation_files()	mega_vimdoc_api.txt	/*mega.vimdoc.make_documentation_files()*
 mega.vimdoc.txt	mega.vimdoc.txt	/*mega.vimdoc.txt*

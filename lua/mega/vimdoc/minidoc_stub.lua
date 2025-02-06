@@ -1,7 +1,4 @@
 --- Fake documentation for 'mini.doc', which doesn't have explicit types.
----
----@module 'mini.doc'
----
 
 ---@class MiniDoc.Hooks
 ---    Customization options during documentation generation. It can control

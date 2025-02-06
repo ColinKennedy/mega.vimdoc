@@ -14,6 +14,15 @@ Fields ~
        An absolute path for the auto-created documentation.
        e.g. `"/out/mega_vimdoc.txt"`.
 
+------------------------------------------------------------------------------
+*mega.vimdoc.AutoDocumentationOptions*
+   Customize the documentation output using these settings, if needed.
+
+Fields ~
+    {enable_module_in_signature} `(boolean?)`
+       If `true`, a function signature like `M.bar(value)` will have its "M"
+       replaced with the actual module name like `foo.bar(value)`.
+
 
 WARNING: This file is auto-generated. Do not edit it!
 
