@@ -493,8 +493,12 @@ function _P.get_vim_runtime_namespace_matches(path)
     ---@type string[]
     local output = {}
 
+    print('DEBUGPRINT[2]: _core.lua:496: vim.api.nvim_list_runtime_paths()=' .. vim.inspect(vim.api.nvim_list_runtime_paths()))
+    print('DEBUGPRINT[3]: _core.lua:492: path=' .. vim.inspect(path))
     for _, root in ipairs(vim.api.nvim_list_runtime_paths()) do
         local relative = _P.relpath(root, path)
+        print('DEBUGPRINT[4]: _core.lua:498: root=' .. vim.inspect(root))
+        print('DEBUGPRINT[1]: _core.lua:497: relative=' .. vim.inspect(relative))
 
         if relative and vim.startswith(relative, "lua/") then
             local inner_path = relative:sub(5, #relative)
