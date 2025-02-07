@@ -1,16 +1,8 @@
 --- Make sure the base features of `mega.vimdoc` works as expected.
----
----@module 'spec.mega_vimdoc.mega_vimdoc_spec'
----
 
+local common = require("test_utilities.common")
+local logging = require("mega.vimdoc._vendors.logging")
 local vimdoc = require("mega.vimdoc")
-
-local _COUNTER = 1
-
----@type string[]
-local _DIRECTORIES_TO_DELETE = {}
-
-local _ORIGINAL_VIM_NOTIFY = vim.notify
 
 --- Get a sub-section copy of `table_` as a new table.
 ---
@@ -37,60 +29,12 @@ local function _get_slice(table_, first, last, step)
     return sliced
 end
 
---- Stop mini.doc from printing during unittests.
-local function _silence_mini_doc()
-    ---@diagnostic disable-next-line: duplicate-set-field
-    vim.notify = function() end
-end
-
---- Revert any mocks before unittests were ran.
-local function _reset_mini_doc()
-    vim.notify = _ORIGINAL_VIM_NOTIFY
-end
-
-local _make_temporary_file
-
-if vim.fn.has("win32") == 1 then
-    -- NOTE: GitHub actions place temp files in a directory, C:\Users\RUNNER~1,
-    -- that Vim doesn't know how to read. So we need to redirect that temporary
-    -- directory that gets created.
-
-    --- Make a file ending in `suffix`.
-    ---
-    ---@param suffix string An ending name / file extension. e.g. `".lua"`.
-    ---@return string # The file path on-disk that Vim made.
-    ---
-    _make_temporary_file = function(suffix)
-        -- NOTE: We need just the string for a directory name.
-        local directory = os.tmpname()
-        vim.fn.delete(directory)
-        directory = vim.fs.joinpath(vim.fn.getcwd(), ".tmp.mega.vimdoc", vim.fs.basename(directory))
-
-        local path = vim.fs.joinpath(directory, tostring(_COUNTER) .. suffix)
-        table.insert(_DIRECTORIES_TO_DELETE, directory)
-        vim.fn.mkdir(directory, "p")
-        _COUNTER = _COUNTER + 1
-
-        return path
-    end
-else
-    --- Make a file ending in `suffix`.
-    ---
-    ---@param suffix string An ending name / file extension. e.g. `".lua"`.
-    ---@return string # The file path on-disk that Vim made.
-    ---
-    _make_temporary_file = function(suffix)
-        -- NOTE: We need just the string for a directory name.
-        local directory = os.tmpname()
-        vim.fn.delete(directory)
-
-        local path = vim.fs.joinpath(directory, tostring(_COUNTER) .. suffix)
-        table.insert(_DIRECTORIES_TO_DELETE, directory)
-        vim.fn.mkdir(directory, "p")
-        _COUNTER = _COUNTER + 1
-
-        return path
-    end
+--- Create the directory just above `path`.
+---
+---@param path string An absolute path that doesn't exist on-disk.
+---
+local function _make_parent_directory(path)
+    vim.fn.mkdir(vim.fs.dirname(path), "p")
 end
 
 --- Fill a file with `source_text`, make documentation, and check it against `expected`.
@@ -98,15 +42,21 @@ end
 --- Raises:
 ---     If the generated Vimdoc does not match `expected`.
 ---
----@param source_text string The raw Lua source code (including docstring text).
----@param expected string The Vimdoc that we think `source_text` should create.
+---@param source_text string
+---    The raw Lua source code (including docstring text).
+---@param expected string
+---    The Vimdoc that we think `source_text` should create.
+---@param options mega.vimdoc.AutoDocumentationOptions?
+---    Customize the output using these settings, if needed.
 ---
-local function _run_test(source_text, expected)
-    local source = _make_temporary_file(".lua")
-    local destination = _make_temporary_file(".txt")
+local function _run_test(source_text, expected, options)
+    local source = common.make_temporary_path(".lua")
+    local destination = common.make_temporary_path(".txt")
+    _make_parent_directory(source)
+    _make_parent_directory(destination)
 
     vim.fn.writefile(vim.fn.split(source_text, "\n"), source)
-    vimdoc.make_documentation_files({ { source = source, destination = destination } })
+    vimdoc.make_documentation_files({ { source = source, destination = destination } }, options)
 
     -- NOTE: We ignore the last few lines because they are auto-generated.
     local raw = vim.fn.readfile(destination)
@@ -117,14 +67,16 @@ end
 
 --- Reset all dependencies and clean up and temporary files / directories.
 local function _after_each()
-    _reset_mini_doc()
-
-    for _, directory in ipairs(_DIRECTORIES_TO_DELETE) do
-        vim.fn.delete(directory, "rf")
-    end
-
-    _DIRECTORIES_TO_DELETE = {}
+    common.reset_mini_doc()
+    common.delete_temporary_data()
 end
+
+before_each(function()
+    logging.set_configuration(nil, { use_console = false })
+    common.silence_mini_doc()
+end)
+
+after_each(_after_each)
 
 describe("general", function()
     it("hides private functions by default #simple", function()
@@ -132,7 +84,7 @@ describe("general", function()
             [[
 --- A module.
 ---
----@module 'foo.bar'
+---@meta foo.bar
 ---
 
 local M = {}
@@ -173,18 +125,58 @@ Return ~
 ]]
         )
     end)
+
+    it("hides the module name from the signature if disabled", function()
+        _run_test(
+            [[
+--- A module.
+---
+---@meta foo.bar
+---
+
+local M = {}
+
+--- Do something.
+---
+---@param value integer A thing.
+---@return string # Text.
+---
+function M.something(value)
+    return "stuff"
+end
+
+return M
+            ]],
+            [[
+==============================================================================
+------------------------------------------------------------------------------
+A module.
+
+------------------------------------------------------------------------------
+                                                           *foo.bar.something()*
+
+`something`({value})
+
+Do something.
+
+Parameters ~
+    {value} `(integer)` A thing.
+
+Return ~
+    `(string)` Text.
+]],
+            { enable_module_in_signature = false }
+        )
+    end)
 end)
 
 describe("namespace replacements", function()
-    before_each(_silence_mini_doc)
-    after_each(_after_each)
-
     it("still works if the module has no `return` statement", function()
         _run_test(
             [[
 --- A module.
 ---
----@module 'foo.bar'
+---@meta foo.bar
 ---
 
 local M = {}
@@ -224,7 +216,7 @@ Return ~
             [[
 --- A module.
 ---
----@module 'foo.bar'
+---@meta foo.bar
 ---
 
 local M = {}
@@ -266,7 +258,7 @@ Return ~
             [[
 --- A module.
 ---
----@module 'foo.bar'
+---@meta foo.bar
 ---
 
 local M = {}
@@ -303,15 +295,12 @@ Return ~
 end)
 
 describe("@class", function()
-    before_each(_silence_mini_doc)
-    after_each(_after_each)
-
     it("works with metatable definitions", function()
         _run_test(
             [[
 --- A module.
 ---
----@module 'some.thing_here'
+---@meta some.thing_here
 ---
 
 ---@class cmdparse.Parameter
@@ -439,9 +428,6 @@ Fields ~
 end)
 
 describe("@field", function()
-    before_each(_silence_mini_doc)
-    after_each(_after_each)
-
     it("links custom @class / @alias / @enum", function()
         _run_test(
             [[
@@ -481,9 +467,6 @@ Fields ~
 end)
 
 describe("@param", function()
-    before_each(_silence_mini_doc)
-    after_each(_after_each)
-
     it("links custom @class / @alias / @enum", function()
         _run_test(
             [[
@@ -545,7 +528,7 @@ describe("bug fix", function()
             [[
 --- A generalized logging for Lua. It's similar to Python's built-in logger.
 ---
----@module 'mega.logging'
+---@meta mega.logging
 ---
 
 ---@alias _Level "trace" | "debug" | "info" | "warn" | "error" | "fatal"

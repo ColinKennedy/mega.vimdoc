@@ -5,13 +5,15 @@ The file that auto-creates documentation for `mega.vimdoc`.
 ------------------------------------------------------------------------------
                                         *mega.vimdoc.make_documentation_files()*
 
-`mega.vimdoc.make_documentation_files`({paths})
+`mega.vimdoc.make_documentation_files`({paths}, {options})
 
 Convert the files in this plug-in from Lua docstrings to Vimdoc documentation.
 
 Parameters ~
     {paths} mega.vimdoc.AutoDocumentationEntry[]
        All of the source + destination pairs to process.
+    {options} mega.vimdoc.AutoDocumentationOptions?
+       Customize the output using these settings, if needed.
 
 
 WARNING: This file is auto-generated. Do not edit it!

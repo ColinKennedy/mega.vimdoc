@@ -1,14 +1,13 @@
 --- A generalized logging for Lua. It's similar to Python's built-in logger.
----
----@module 'mega.vimdoc._vendors._logging'
----
+
+---@alias _logging._Level "trace" | "debug" | "info" | "warning" | "error" | "fatal"
 
 ---@class mega.vimdoc._vendors._logging.SparseLoggerOptions
 ---    All of the customizations a person can make to a logger instance.
 ---@field float_precision number?
 ---    A positive value (max of 1) to indicate the rounding precision. e.g.
 ---    0.01 rounds to every hundredths.
----@field level ("trace" | "debug" | "info" | "warn" | "error" | "fatal")?
+---@field level _logging._Level?
 ---    The minimum severity needed for this logger instance to output a log.
 ---@field name string?
 ---    An identifier for this logger.
@@ -30,7 +29,7 @@
 ---@field float_precision number
 ---    A positive value (max of 1) to indicate the rounding precision. e.g.
 ---    0.01 rounds to every hundredths.
----@field level "trace" | "debug" | "info" | "warn" | "error" | "fatal"
+---@field level _logging._Level
 ---    The minimum severity needed for this logger instance to output a log.
 ---@field name string
 ---    An identifier for this logger.
@@ -55,11 +54,17 @@
 ---    The associated level for this object.
 ---@field name string
 ---    The name of the level, e.g. `"info"`.
+---@private
 
 local _P = {}
 local M = {}
 
-local _LEVELS = { trace = 10, debug = 20, info = 30, warn = 40, error = 50, fatal = 60 }
+local _LOGGER_HIERARCHY_SEPARATOR = "."
+local _LEVELS = { trace = 10, debug = 20, info = 30, warning = 40, error = 50, fatal = 60 }
+
+---@type table<string, mega.vimdoc._vendors._logging.SparseLoggerOptions>
+---@private
+local _OPTIONS = {}
 
 --- Suggest a default level for all loggers.
 ---
@@ -115,11 +120,12 @@ M._LOGGERS = {}
 ---@class mega.vimdoc._vendors._logging.Logger
 M.Logger = {
     __tostring = function(logger)
-        return string.format("mega.vimdoc._vendors._logging.Logger({names=%s})", vim.inspect(logger.name))
+        return string.format("mega.logging.Logger({names=%s})", vim.inspect(logger.name))
     end,
 }
 M.Logger.__index = M.Logger
 
+-- TODO: Replace the timing function that rounds precision with this rounder, instead.
 --- Approximate (round) `value` according to `increment`.
 ---
 ---@param value number
@@ -136,6 +142,30 @@ function _P.round(value, increment)
     value = value / increment
 
     return (value > 0 and math.floor(value + 0.5) or math.ceil(value - 0.5)) * increment
+end
+
+--- Add `data` to this logger instance's description.
+---
+---@param options mega.vimdoc._vendors._logging.SparseLoggerOptions The logger to create.
+---@private
+---
+function M.Logger:_apply_parent_configuration(options)
+    self._sparse_options = _OPTIONS[self.name] or self._sparse_options
+    local full_options = vim.tbl_deep_extend("force", options, self._sparse_options)
+
+    self.level = full_options.level
+    self.use_file = full_options.use_file
+    self.use_highlights = full_options.use_highlights
+    self.use_neovim_commands = full_options.use_neovim_commands
+
+    self._float_precision = full_options.float_precision
+    self._use_console = full_options.use_console
+    ---@type string?
+    self._output_path = full_options.output_path
+
+    if not self._output_path and self.use_neovim_commands then
+        self._output_path = vim.fs.joinpath(vim.api.nvim_call_function("stdpath", { "data" }), "default.log")
+    end
 end
 
 --- Format a template string and log it according to `level` and `mode`.
@@ -197,7 +227,7 @@ function M.Logger:_log_at_level(level, mode, message_maker, ...)
     local lineinfo = info.short_src .. ":" .. info.currentline
 
     if self._use_console then
-        local console_string = string.format("[%-6s%s] %s: %s", nameupper, os.date("%H:%M:%S"), lineinfo, message)
+        local console_string = string.format("[%-8s%s] %s: %s", nameupper, os.date("%H:%M:%S"), lineinfo, message)
 
         if not self.use_neovim_commands then
             local split_console = vim.split(console_string, "\n")
@@ -294,6 +324,14 @@ function M.Logger:fatal(...)
     end, ...)
 end
 
+--- Send a "this is rarely shown, even when debugging" message to the logger.
+---
+---@param ... any Any arguments.
+---
+function M.Logger:fmt_trace(...)
+    self:_format_and_log_at_level(_LEVELS.trace, _MODES.trace, ...)
+end
+
 --- Send a message that is intended for developers to the logger.
 ---
 ---@param ... any Any arguments.
@@ -344,6 +382,16 @@ function M.Logger:info(...)
     end, ...)
 end
 
+--- Send a "this is rarely shown, even when debugging" message to the logger.
+---
+---@param ... any Any arguments.
+---
+function M.Logger:trace(...)
+    self:_log_at_level(_LEVELS.trace, _MODES.trace, function(...)
+        return self:_make_string(...)
+    end, ...)
+end
+
 --- Send a "this might be an issue or we recovered from an error" message to the logger.
 ---
 ---@param ... any Any arguments.
@@ -356,23 +404,28 @@ end
 
 --- Create a new logger according to `options`.
 ---
----@param options mega.vimdoc._vendors._logging.LoggerOptions The logger to create.
+---@param options mega.vimdoc._vendors._logging.SparseLoggerOptions The logger to create.
 ---@return mega.vimdoc._vendors._logging.Logger # The created instance.
 ---
 function M.Logger.new(options)
     ---@class mega.vimdoc._vendors._logging.Logger
     local self = setmetatable({}, M.Logger)
 
-    self.level = options.level
-    self.name = options.name
-    self.use_file = options.use_file
-    self.use_highlights = options.use_highlights
-    self.use_neovim_commands = options.use_neovim_commands
+    self._sparse_options = options
 
-    self._float_precision = options.float_precision
-    self._use_console = options.use_console
+    local full_options = vim.tbl_deep_extend("force", M._DEFAULTS, options or {})
+    ---@cast full_options mega.vimdoc._vendors._logging.LoggerOptions
+
+    self.level = full_options.level
+    self.name = full_options.name
+    self.use_file = full_options.use_file
+    self.use_highlights = full_options.use_highlights
+    self.use_neovim_commands = full_options.use_neovim_commands
+
+    self._float_precision = full_options.float_precision
+    self._use_console = full_options.use_console
     ---@type string?
-    self._output_path = options.output_path
+    self._output_path = full_options.output_path
 
     if not self._output_path and self.use_neovim_commands then
         self._output_path = vim.fs.joinpath(vim.api.nvim_call_function("stdpath", { "data" }), "default.log")
@@ -386,24 +439,61 @@ function M.Logger:get_log_path()
     return self._output_path
 end
 
+--- Gather all data above `logger`.
+---
+--- Important:
+---     This function is *exclusive* - it does not include any sparse options
+---     of `logger` itself, just its parents.
+---
+---@param logger mega.vimdoc._vendors._logging.Logger The logger to start searching from.
+---@return mega.vimdoc._vendors._logging.SparseLoggerOptions # All found options, if any.
+---@private
+---
+function _P.get_parent_configuration(logger)
+    local parts = vim.fn.split(logger.name, "\\.")
+    ---@type mega.vimdoc._vendors._logging.SparseLoggerOptions
+    local output = vim.tbl_deep_extend("force", M._DEFAULTS, _OPTIONS[_ROOT_NAME] or {})
+
+    for index = 1, #parts do
+        ---@type string[]
+        local namespace = {}
+
+        for inner_index = 1, index do
+            table.insert(namespace, parts[inner_index])
+        end
+
+        output =
+            vim.tbl_deep_extend("force", output, _OPTIONS[vim.fn.join(namespace, _LOGGER_HIERARCHY_SEPARATOR)] or {})
+    end
+
+    return output
+end
+
+--- Find and re-apply all configurations for all loggers starting with `name`.
+---
+---@param name string? A starting point. e.g. `"foo.bar"`.
+---@private
+---
+function _P.recompute_loggers(name)
+    for _, logger in pairs(M._LOGGERS) do
+        if not name or vim.startswith(logger.name, name) then
+            local data = _P.get_parent_configuration(logger)
+            ---@diagnostic disable-next-line undefined-field
+            logger:_apply_parent_configuration(data)
+        end
+    end
+end
+
 --- Find an existing logger with `name` or create one if it does not exist already.
 ---
----@param options
----    | mega.vimdoc._vendors._logging.LoggerOptions
----    | mega.vimdoc._vendors._logging.SparseLoggerOptions
----    | string
----    The logger to create.
----@return mega.vimdoc._vendors._logging.Logger
----    The created instance.
+---@param options mega.vimdoc._vendors._logging.SparseLoggerOptions | string The logger to create.
+---@return mega.vimdoc._vendors._logging.Logger # The created instance.
 ---
 function M.get_logger(options)
     if type(options) == "string" then
         ---@diagnostic disable-next-line: missing-fields
         options = { name = options }
     end
-
-    options = vim.tbl_deep_extend("force", M._DEFAULTS, options or {})
-    ---@cast options mega.vimdoc._vendors._logging.LoggerOptions
 
     local name = options.name
 
@@ -416,8 +506,29 @@ function M.get_logger(options)
     end
 
     M._LOGGERS[name] = M.Logger.new(options)
+    _P.recompute_loggers(name)
 
     return M._LOGGERS[name]
+end
+
+--- Apply `options` to `name` and all child loggers.
+---
+--- If `name` is `"foo.bar"` then `"foo.bar"` will be edited but also so will
+--- its children `"foo.bar.fizz"`, `"foo.bar.fizz.buzz"`, `"foo.bar.another"`, etc.
+---
+---@param name string? The logger namespace to start modifying from.
+---@param options mega.vimdoc._vendors._logging.SparseLoggerOptions The data to apply.
+---
+function M.set_configuration(name, options)
+    local key = name
+
+    if not key then
+        key = _ROOT_NAME
+    end
+
+    _OPTIONS[key] = options
+
+    _P.recompute_loggers(name)
 end
 
 return M
