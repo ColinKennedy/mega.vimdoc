@@ -107,7 +107,7 @@ describe("module discovery", function()
     end)
 
     describe("lua", function()
-        it("works when a path is found in Lua's LUA_CPATH", function()
+        it("works when a path is found in Lua's LUA_CPATH #asdf", function()
             local root = common.make_temporary_path()
             local plugin = vim.fs.joinpath(root, "my_fake_neovim_plugin")
             local path = vim.fs.joinpath(plugin, "lua", "foo.lua")

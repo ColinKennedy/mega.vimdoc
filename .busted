@@ -6,6 +6,7 @@ return {
   },
   default = {
     helper = "./spec/minimal_init.lua",
+    tags = {"asdf"},
     verbose = true,
   },
   tests = {
