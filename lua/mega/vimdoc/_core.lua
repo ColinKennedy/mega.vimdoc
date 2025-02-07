@@ -144,6 +144,7 @@ function _P.get_lua_package_path_namespace_matches(path)
     ---@type string[]
     local output = {}
 
+    print('DEBUGPRINT[10]: _core.lua:147: path=' .. vim.inspect(path))
     print('DEBUGPRINT[5]: _core.lua:147: package.path=' .. vim.inspect(package.path))
     for _, expression in ipairs(vim.split(package.path, lua_path_separator)) do
         print('DEBUGPRINT[6]: _core.lua:148: expression=' .. vim.inspect(expression))
