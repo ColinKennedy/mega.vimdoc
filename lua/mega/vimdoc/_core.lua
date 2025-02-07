@@ -144,13 +144,17 @@ function _P.get_lua_package_path_namespace_matches(path)
     ---@type string[]
     local output = {}
 
+    print('DEBUGPRINT[5]: _core.lua:147: package.path=' .. vim.inspect(package.path))
     for _, expression in ipairs(vim.split(package.path, lua_path_separator)) do
+        print('DEBUGPRINT[6]: _core.lua:148: expression=' .. vim.inspect(expression))
         -- NOTE: A typical package.path contains `"foo;;"` so `expression` may
         -- actually be an empty string. Just skip it if so.
         --
         if expression ~= "" then
             local lua_pattern = (expression:gsub("%?", "(.*)"))
+            print('DEBUGPRINT[7]: _core.lua:154: lua_pattern=' .. vim.inspect(lua_pattern))
             local match = path:match("^" .. lua_pattern .. "$")
+            print('DEBUGPRINT[8]: _core.lua:156: match=' .. vim.inspect(match))
 
             if match then
                 table.insert(output, ((match:gsub("/", ".")):gsub("%.lua$", "")))
@@ -493,12 +497,8 @@ function _P.get_vim_runtime_namespace_matches(path)
     ---@type string[]
     local output = {}
 
-    print('DEBUGPRINT[2]: _core.lua:496: vim.api.nvim_list_runtime_paths()=' .. vim.inspect(vim.api.nvim_list_runtime_paths()))
-    print('DEBUGPRINT[3]: _core.lua:492: path=' .. vim.inspect(path))
     for _, root in ipairs(vim.api.nvim_list_runtime_paths()) do
         local relative = _P.relpath(root, path)
-        print('DEBUGPRINT[4]: _core.lua:498: root=' .. vim.inspect(root))
-        print('DEBUGPRINT[1]: _core.lua:497: relative=' .. vim.inspect(relative))
 
         if relative and vim.startswith(relative, "lua/") then
             local inner_path = relative:sub(5, #relative)
