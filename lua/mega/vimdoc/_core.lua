@@ -583,26 +583,21 @@ else
     ---
     --- @param base string
     --- @param target string
-    --- @param opts table? Reserved for future use
     --- @return string|nil
-    function _P.relpath(base, target, opts)
-      vim.validate('base', base, 'string')
-      vim.validate('target', target, 'string')
-      vim.validate('opts', opts, 'table', true)
+    function _P.relpath(base, target)
+        base = vim.fs.normalize(vim.fn.fnamemodify(base, ":p"))
+        target = vim.fs.normalize(vim.fn.fnamemodify(target, ":p"))
+        if base == target then
+            return "."
+        end
 
-      base = vim.fs.normalize(vim.fs.abspath(base))
-      target = vim.fs.normalize(vim.fs.abspath(target))
-      if base == target then
-        return '.'
-      end
+        local prefix = ""
+        if _IS_WINDOWS then
+            prefix, base = _P.split_windows_path(base)
+        end
+        base = prefix .. base .. (base ~= "/" and "/" or "")
 
-      local prefix = ''
-      if _IS_WINDOWS then
-        prefix, base = _P.split_windows_path(base)
-      end
-      base = prefix .. base .. (base ~= '/' and '/' or '')
-
-      return vim.startswith(target, base) and target:sub(#base + 1) or nil
+        return vim.startswith(target, base) and target:sub(#base + 1) or nil
     end
 end
 
@@ -675,6 +670,9 @@ function _P.set_leading_newline(section, count)
     end
 end
 
+-- TODO: relpath is only available in Vim 0.11+.
+-- Remove this function once we drop Vim 0.10.
+--
 --- Split a Windows path into a prefix and a body, such that the body can be processed like a POSIX
 --- path. The path must use forward slashes as path separator.
 ---
@@ -690,57 +688,57 @@ end
 --- @param path string Path to split.
 --- @return string, string, boolean : prefix, body, whether path is invalid.
 function _P.split_windows_path(path)
-  local prefix = ''
+    local prefix = ""
 
-  --- Match pattern. If there is a match, move the matched pattern from the path to the prefix.
-  --- Returns the matched pattern.
-  ---
-  --- @param pattern string Pattern to match.
-  --- @return string|nil Matched pattern
-  local function match_to_prefix(pattern)
-    local match = path:match(pattern)
+    --- Match pattern. If there is a match, move the matched pattern from the path to the prefix.
+    --- Returns the matched pattern.
+    ---
+    --- @param pattern string Pattern to match.
+    --- @return string|nil Matched pattern
+    local function match_to_prefix(pattern)
+        local match = path:match(pattern)
 
-    if match then
-      prefix = prefix .. match --[[ @as string ]]
-      path = path:sub(#match + 1)
+        if match then
+            prefix = prefix .. match --[[ @as string ]]
+            path = path:sub(#match + 1)
+        end
+
+        return match
     end
 
-    return match
-  end
-
-  local function process_unc_path()
-    return match_to_prefix('[^/]+/+[^/]+/+')
-  end
-
-  if match_to_prefix('^//[?.]/') then
-    -- Device paths
-    local device = match_to_prefix('[^/]+/+')
-
-    -- Return early if device pattern doesn't match, or if device is UNC and it's not a valid path
-    if not device or (device:match('^UNC/+$') and not process_unc_path()) then
-      return prefix, path, false
+    local function process_unc_path()
+        return match_to_prefix("[^/]+/+[^/]+/+")
     end
-  elseif match_to_prefix('^//') then
-    -- Process UNC path, return early if it's invalid
-    if not process_unc_path() then
-      return prefix, path, false
+
+    if match_to_prefix("^//[?.]/") then
+        -- Device paths
+        local device = match_to_prefix("[^/]+/+")
+
+        -- Return early if device pattern doesn't match, or if device is UNC and it's not a valid path
+        if not device or (device:match("^UNC/+$") and not process_unc_path()) then
+            return prefix, path, false
+        end
+    elseif match_to_prefix("^//") then
+        -- Process UNC path, return early if it's invalid
+        if not process_unc_path() then
+            return prefix, path, false
+        end
+    elseif path:match("^%w:") then
+        -- Drive paths
+        prefix, path = path:sub(1, 2), path:sub(3)
     end
-  elseif path:match('^%w:') then
-    -- Drive paths
-    prefix, path = path:sub(1, 2), path:sub(3)
-  end
 
-  -- If there are slashes at the end of the prefix, move them to the start of the body. This is to
-  -- ensure that the body is treated as an absolute path. For paths like C:foo/bar, there are no
-  -- slashes at the end of the prefix, so it will be treated as a relative path, as it should be.
-  local trailing_slash = prefix:match('/+$')
+    -- If there are slashes at the end of the prefix, move them to the start of the body. This is to
+    -- ensure that the body is treated as an absolute path. For paths like C:foo/bar, there are no
+    -- slashes at the end of the prefix, so it will be treated as a relative path, as it should be.
+    local trailing_slash = prefix:match("/+$")
 
-  if trailing_slash then
-    prefix = prefix:sub(1, -1 - #trailing_slash)
-    path = trailing_slash .. path --[[ @as string ]]
-  end
+    if trailing_slash then
+        prefix = prefix:sub(1, -1 - #trailing_slash)
+        path = trailing_slash .. path --[[ @as string ]]
+    end
 
-  return prefix, path, true
+    return prefix, path, true
 end
 
 --- Remove the `"# "` prefix from return `text` if there is some.
