@@ -523,6 +523,73 @@ Return ~
 end)
 
 describe("bug fix", function()
+    describe("@alias", function()
+        it("works with complex, partial aliases", function()
+            _run_test(
+                [[
+---@alias Foo table<string, FooBar>
+
+---@class FooBar
+---    Something
+---@field blah1 string
+---    Another
+
+---@class Thing
+---    Something replaced
+---@field blah2 Foo
+---    Another replaced
+---@field blah3 fun(value: Foo) | Foo
+---    Another replaced
+                ]],
+                [[
+==============================================================================
+------------------------------------------------------------------------------
+*FooBar*
+   Something
+
+Fields ~
+    {blah1} `(string)`
+       Another
+
+------------------------------------------------------------------------------
+*Thing*
+   Something replaced
+
+Fields ~
+    {blah2} `(table<string, FooBar>)`
+       Another replaced
+    {blah3} `(fun(value: table<string, FooBar>))` | table<string, FooBar>
+       Another replaced
+]]
+            )
+        end)
+
+        it("works with complex, partial aliases", function()
+            _run_test(
+                [[
+---@alias some._Level "trace" | "debug" | "info" | "warn" | "error" | "fatal"
+
+---@class some._LevelThing
+---@field blah_blah some._Level Some description
+---@field infix some._LevelInner Another description
+---@field blah_optional some._Level? Last description
+---@field prefix some.Some_Level Another description
+                ]],
+                [[
+==============================================================================
+------------------------------------------------------------------------------
+*some._LevelThing*
+
+Fields ~
+    {blah_blah} ("trace" | "debug" | "info" | "warn" | "error" | "fatal") Some description
+    {infix} some._LevelInner Another description
+    {blah_optional} ("trace" | "debug" | "info" | "warn" | "error" | "fatal")? Last description
+    {prefix} some.Some_Level Another description
+]]
+            )
+        end)
+    end)
+
     it("works with the logging module #simple", function()
         _run_test(
             [[
@@ -531,14 +598,14 @@ describe("bug fix", function()
 ---@meta mega.logging
 ---
 
----@alias _Level "trace" | "debug" | "info" | "warn" | "error" | "fatal"
+---@alias some._Level "trace" | "debug" | "info" | "warn" | "error" | "fatal"
 
 ---@class mega.logging.SparseLoggerOptions
 ---    All of the customizations a person can make to a logger instance.
 ---@field float_precision number?
 ---    A positive value (max of 1) to indicate the rounding precision. e.g.
 ---    0.01 rounds to every hundredths.
----@field level _Level?
+---@field level some._Level?
 ---    The minimum severity needed for this logger instance to output a log.
 ---@field name string?
 ---    An identifier for this logger.
@@ -560,7 +627,7 @@ describe("bug fix", function()
 ---@field float_precision number
 ---    A positive value (max of 1) to indicate the rounding precision. e.g.
 ---    0.01 rounds to every hundredths.
----@field level _Level
+---@field level some._Level
 ---    The minimum severity needed for this logger instance to output a log.
 ---@field name string
 ---    An identifier for this logger.
@@ -994,7 +1061,7 @@ Fields ~
     {float_precision} `(number?)`
        A positive value (max of 1) to indicate the rounding precision. e.g.
        0.01 rounds to every hundredths.
-    {level} "trace" | "debug" | "info" | "warn" | "error" | "fatal"?
+    {level} ("trace" | "debug" | "info" | "warn" | "error" | "fatal")?
        The minimum severity needed for this logger instance to output a log.
     {name} `(string?)`
        An identifier for this logger.
@@ -1019,7 +1086,7 @@ Fields ~
     {float_precision} `(number)`
        A positive value (max of 1) to indicate the rounding precision. e.g.
        0.01 rounds to every hundredths.
-    {level} "trace" | "debug" | "info" | "warn" | "error" | "fatal"
+    {level} ("trace" | "debug" | "info" | "warn" | "error" | "fatal")
        The minimum severity needed for this logger instance to output a log.
     {name} `(string)`
        An identifier for this logger.

@@ -1,7 +1,7 @@
 --- Run the is file before you run unittests to download any extra dependencies.
 
 local _PLUGINS = {
-    ["https://github.com/echasnovski/mini.doc"] = os.getenv("MINI_DOC_DIR") or "/tmp/mini.doc",
+    ["https://github.com/ColinKennedy/mini.doc"] = os.getenv("MINI_DOC_DIR") or "/tmp/mini.doc",
 }
 
 local cloned = false
