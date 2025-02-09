@@ -1,5 +1,5 @@
 return {
     "ColinKennedy/mega.vimdoc",
-    dependencies = { "echasnovski/mini.doc" },
+    dependencies = { "ColinKennedy/mini.doc" },
     version = "v1.*",
 }

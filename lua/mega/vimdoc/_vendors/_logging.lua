@@ -120,7 +120,7 @@ M._LOGGERS = {}
 ---@class mega.vimdoc._vendors._logging.Logger
 M.Logger = {
     __tostring = function(logger)
-        return string.format("mega.logging.Logger({names=%s})", vim.inspect(logger.name))
+        return string.format("mega.vimdoc._logging.Logger({names=%s})", vim.inspect(logger.name))
     end,
 }
 M.Logger.__index = M.Logger
