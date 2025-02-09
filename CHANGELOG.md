@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.6](https://github.com/ColinKennedy/mega.vimdoc/compare/v1.0.5...v1.0.6) (2025-02-09)
+
+
+### Bug Fixes
+
+* **annotation:** replaced ---[@module](https://github.com/module) with ---[@meta](https://github.com/meta) ([08b7e57](https://github.com/ColinKennedy/mega.vimdoc/commit/08b7e571f69a740231079f0b1d4413061cd6825a))
+* **test:** added more [@alias](https://github.com/alias) checks ([68ffe2a](https://github.com/ColinKennedy/mega.vimdoc/commit/68ffe2afe60acae8cd98b42f7bf21ccbc689ccec))
+
 ## [1.0.5](https://github.com/ColinKennedy/mega.vimdoc/compare/v1.0.4...v1.0.5) (2025-01-27)
 
 
