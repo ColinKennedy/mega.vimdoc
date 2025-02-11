@@ -6,7 +6,8 @@ Notable changes since mega.vimdoc 1.0
 ===============================================================================
 NEW FEATURES                                     *mega.vimdoc-new-features*
 
-First release!
+- Fast navigation to custom types is now supported.
+    - See `:help CTRL-]` for details.
 
 
 ===============================================================================

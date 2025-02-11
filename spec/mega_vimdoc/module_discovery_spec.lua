@@ -20,31 +20,6 @@ local function _keep_neovim_runtime()
     _RUNTIMEPATH = vim.fn.copy(vim.o.runtimepath)
 end
 
---- Make a file on-disk at `path`.
----
---- Raises:
----     If `path` is not writeable for some reason.
----
----@param path string An absolute path where a new file (probably a file file) will go.
----@param data string A blob of text to write into the `path`.
----
-local function _make_fake_file(path, data)
-    local directory = vim.fs.dirname(path)
-
-    if vim.fn.isdirectory(directory) ~= 1 then
-        vim.fn.mkdir(directory, "p")
-    end
-
-    local file = io.open(path, "w")
-
-    if not file then
-        error(string.format('Path "%s" cannot be written to.', path), 0)
-    end
-
-    file:write(data)
-    file:close()
-end
-
 --- Add `directory` to the start of `:help 'runtimepath'` so that we can import it.
 ---
 ---@param directory string An absolute path on-disk to a Neovim plugin.
@@ -58,28 +33,6 @@ local function _prepend_to_runtimepath(directory)
 
     local separator = ","
     vim.o.runtimepath = directory .. separator .. vim.o.runtimepath
-end
-
---- Read the file contents of `path`.
----
---- Raises:
----     If `path` is unreadable.
----
----@param path string An absolute path on-disk.
----@return string # The found text.
----
-local function _read_file_data(path)
-    local file = io.open(path, "r")
-
-    if not file then
-        error(string.format('Path "%s" cannot be read.', path))
-    end
-
-    local data = file:read("*a")
-
-    file:close()
-
-    return data
 end
 
 --- Get the saved `:help 'runtimepath'` and apply it back to the current environment.
@@ -113,7 +66,7 @@ describe("module discovery", function()
             local path = vim.fs.joinpath(plugin, "lua", "foo.lua")
 
             package.path = vim.fs.joinpath(plugin, "lua", "?.lua")
-            _make_fake_file(
+            common.make_fake_file(
                 path,
                 [[
 local M = {}
@@ -136,7 +89,7 @@ return M
             local destination = vim.fs.joinpath(common.make_temporary_path(), "inner_folder", "destination.lua")
             vimdoc.make_documentation_files({ { source = path, destination = destination } })
 
-            local found = _read_file_data(destination)
+            local found = common.read_file_data(destination)
 
             assert.equal(
                 [[
@@ -171,7 +124,7 @@ WARNING: This file is auto-generated. Do not edit it!
             local path = vim.fs.joinpath(plugin, "lua", "foo.lua")
 
             _prepend_to_runtimepath(plugin)
-            _make_fake_file(
+            common.make_fake_file(
                 path,
                 [[
 local M = {}
@@ -194,7 +147,7 @@ return M
             local destination = vim.fs.joinpath(common.make_temporary_path(), "inner_folder", "destination.lua")
             vimdoc.make_documentation_files({ { source = path, destination = destination } })
 
-            local found = _read_file_data(destination)
+            local found = common.read_file_data(destination)
 
             assert.equal(
                 [[
@@ -224,7 +177,7 @@ WARNING: This file is auto-generated. Do not edit it!
             local path = vim.fs.joinpath(plugin, "lua", "foo", "init.lua")
 
             _prepend_to_runtimepath(plugin)
-            _make_fake_file(
+            common.make_fake_file(
                 path,
                 [[
 local M = {}
@@ -247,7 +200,7 @@ return M
             local destination = vim.fs.joinpath(common.make_temporary_path(), "inner_folder", "destination.lua")
             vimdoc.make_documentation_files({ { source = path, destination = destination } })
 
-            local found = _read_file_data(destination)
+            local found = common.read_file_data(destination)
 
             assert.equal(
                 [[
@@ -277,7 +230,7 @@ WARNING: This file is auto-generated. Do not edit it!
             local path = vim.fs.joinpath(plugin, "lua", "foo", "fizz.lua")
 
             _prepend_to_runtimepath(plugin)
-            _make_fake_file(
+            common.make_fake_file(
                 path,
                 [[
 local M = {}
@@ -300,7 +253,7 @@ return M
             local destination = vim.fs.joinpath(common.make_temporary_path(), "inner_folder", "destination.lua")
             vimdoc.make_documentation_files({ { source = path, destination = destination } })
 
-            local found = _read_file_data(destination)
+            local found = common.read_file_data(destination)
 
             assert.equal(
                 [[
@@ -331,7 +284,7 @@ WARNING: This file is auto-generated. Do not edit it!
             local plugin = vim.fs.joinpath(root, "my_fake_neovim_plugin")
             local path = vim.fs.joinpath(plugin, "lua", "foo", "fizz.lua")
 
-            _make_fake_file(
+            common.make_fake_file(
                 path,
                 [[
 local M = {}
@@ -354,7 +307,7 @@ return M
             local destination = vim.fs.joinpath(common.make_temporary_path(), "inner_folder", "destination.lua")
             vimdoc.make_documentation_files({ { source = path, destination = destination } })
 
-            local found = _read_file_data(destination)
+            local found = common.read_file_data(destination)
 
             assert.equal(
                 [[

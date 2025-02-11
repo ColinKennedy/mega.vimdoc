@@ -4,31 +4,6 @@ local common = require("test_utilities.common")
 local logging = require("mega.vimdoc._vendors.logging")
 local vimdoc = require("mega.vimdoc")
 
---- Get a sub-section copy of `table_` as a new table.
----
----@param table_ table<any, any>
----    A list / array / dictionary / sequence to copy + reduce.
----@param first? number
----    The start index to use. This value is **inclusive** (the given index
----    will be returned). Uses `table_`'s first index if not provided.
----@param last? number
----    The end index to use. This value is **inclusive** (the given index will
----    be returned). Uses every index to the end of `table_`' if not provided.
----@param step? number
----    The step size between elements in the slice. Defaults to 1 if not provided.
----@return table<any, any>
----    The subset of `table_`.
----
-local function _get_slice(table_, first, last, step)
-    local sliced = {}
-
-    for i = first or 1, last or #table_, step or 1 do
-        sliced[#sliced + 1] = table_[i]
-    end
-
-    return sliced
-end
-
 --- Create the directory just above `path`.
 ---
 ---@param path string An absolute path that doesn't exist on-disk.
@@ -60,7 +35,7 @@ local function _run_test(source_text, expected, options)
 
     -- NOTE: We ignore the last few lines because they are auto-generated.
     local raw = vim.fn.readfile(destination)
-    local found = vim.fn.join(_get_slice(raw, 1, math.max(#raw - 4, 1)), "\n")
+    local found = vim.fn.join(common.get_slice(raw, 1, math.max(#raw - 4, 1)), "\n")
 
     assert.equal(expected, found)
 end
@@ -364,10 +339,10 @@ A module.
 Create a new instance using `options`.
 
 Parameters ~
-    {options} cmdparse.ParameterOptions All of the settings to include in a new parse argument.
+    {options} |cmdparse.ParameterOptions| All of the settings to include in a new parse argument.
 
 Return ~
-    cmdparse.Parameter The created instance.
+    |cmdparse.Parameter| The created instance.
 ]]
         )
     end)
@@ -451,15 +426,15 @@ describe("@field", function()
    And some text here.
 
 Fields ~
-    {bar} SomeCustomType
+    {bar} |SomeCustomType|
        More information.
-    {fizz} _PrivateThing
+    {fizz} |_PrivateThing|
        Lines and lines.
        with more lines here
        that span extra lines.
     {blah} `(string)`
        Stuff
-    {buzz} namespaced._foo.Thing
+    {buzz} |namespaced._foo.Thing|
        Etc etc.
 ]]
         )
@@ -498,25 +473,25 @@ Do something.
 
 Parameters ~
     {value} `(integer)` A thing.
-    {another} CustomClass A thing.
-    {foo} _PrivateCustomClass A thing.
-    {bar} namespace.with._PrivateCustomClass A thing.
-    {fizz} namespace.with._private_module._PrivateCustomClass A thing.
+    {another} |CustomClass| A thing.
+    {foo} |_PrivateCustomClass| A thing.
+    {bar} |namespace.with._PrivateCustomClass| A thing.
+    {fizz} |namespace.with._private_module._PrivateCustomClass| A thing.
 
 Return ~
     `(string)` Text.
 
 Return ~
-    CustomClass A thing.
+    |CustomClass| A thing.
 
 Return ~
-    _PrivateCustomClass A thing.
+    |_PrivateCustomClass| A thing.
 
 Return ~
-    namespace.with._PrivateCustomClass A thing.
+    |namespace.with._PrivateCustomClass| A thing.
 
 Return ~
-    namespace.with._private_module._PrivateCustomClass A thing.
+    |namespace.with._private_module._PrivateCustomClass| A thing.
 ]]
         )
     end)
@@ -556,9 +531,9 @@ Fields ~
    Something replaced
 
 Fields ~
-    {blah2} `(table<string, FooBar>)`
+    {blah2} table<`(string)`, |FooBar|>
        Another replaced
-    {blah3} `(fun(value: table<string, FooBar>))` | table<string, FooBar>
+    {blah3} fun(value: table<`(string)`, |FooBar|>) | table<`(string)`, |FooBar|>
        Another replaced
 ]]
             )
@@ -582,9 +557,9 @@ Fields ~
 
 Fields ~
     {blah_blah} ("trace" | "debug" | "info" | "warn" | "error" | "fatal") Some description
-    {infix} some._LevelInner Another description
+    {infix} |some._LevelInner| Another description
     {blah_optional} ("trace" | "debug" | "info" | "warn" | "error" | "fatal")? Last description
-    {prefix} some.Some_Level Another description
+    {prefix} |some.Some_Level| Another description
 ]]
             )
         end)
@@ -1008,7 +983,7 @@ end
 
 --- Find an existing logger with `name` or create one if it does not exist already.
 ---
----@param options mega.logging.SparseLoggerOptions | string The logger to create.
+---@param options mega.logging.SparseLoggerOptions string The logger to create.
 ---@return mega.logging.Logger # The created instance.
 ---
 function M.get_logger(options)
@@ -1058,22 +1033,22 @@ A generalized logging for Lua. It's similar to Python's built-in logger.
    All of the customizations a person can make to a logger instance.
 
 Fields ~
-    {float_precision} `(number?)`
+    {float_precision} `(number)`?
        A positive value (max of 1) to indicate the rounding precision. e.g.
        0.01 rounds to every hundredths.
     {level} ("trace" | "debug" | "info" | "warn" | "error" | "fatal")?
        The minimum severity needed for this logger instance to output a log.
-    {name} `(string?)`
+    {name} `(string)`?
        An identifier for this logger.
-    {output_path} `(string?)`
+    {output_path} `(string)`?
        A path on-disk where logs are written to, if any.
-    {use_console} `(boolean?)`
+    {use_console} `(boolean)`?
        If `true`, logs are printed to the terminal / console.
-    {use_file} `(boolean?)`
+    {use_file} `(boolean)`?
        If `true`, logs are written to `output_path`.
-    {use_highlights} `(boolean?)`
+    {use_highlights} `(boolean)`?
        If `true`, logs are colorful. If `false`, they're mono-colored text.
-    {use_neovim_commands} `(boolean?)`
+    {use_neovim_commands} `(boolean)`?
        If `true`, allow logs to submit as Neovim commands. If `false`, only
        built-in Lua commands will be used. This is useful if you want to log
        within a libuv thread and don't want to call `vim.schedule()`.
@@ -1216,10 +1191,10 @@ Parameters ~
 Create a new logger according to `options`.
 
 Parameters ~
-    {options} mega.logging.SparseLoggerOptions The logger to create.
+    {options} |mega.logging.SparseLoggerOptions| The logger to create.
 
 Return ~
-    mega.logging.Logger The created instance.
+    |mega.logging.Logger| The created instance.
 
 ------------------------------------------------------------------------------
                                             *mega.logging.Logger:get_log_path()*
@@ -1228,7 +1203,7 @@ Return ~
 
 
 Return ~
-    `(string)` `(optional)` The path on-disk where logs will be written to.
+    `(string)` (optional) The path on-disk where logs will be written to.
 
 ------------------------------------------------------------------------------
                                                      *mega.logging.get_logger()*
@@ -1238,10 +1213,10 @@ Return ~
 Find an existing logger with `name` or create one if it does not exist already.
 
 Parameters ~
-    {options} mega.logging.SparseLoggerOptions | `(string)` The logger to create.
+    {options} |mega.logging.SparseLoggerOptions| string The logger to create.
 
 Return ~
-    mega.logging.Logger The created instance.
+    |mega.logging.Logger| The created instance.
 
 ------------------------------------------------------------------------------
                                               *mega.logging.set_configuration()*
@@ -1255,7 +1230,7 @@ its children `"foo.bar.fizz"`, `"foo.bar.fizz.buzz"`, `"foo.bar.another"`, etc.
 
 Parameters ~
     {name} `(string)` The logger namespace to start modifying from.
-    {options} mega.logging.SparseLoggerOptions The data to apply.
+    {options} |mega.logging.SparseLoggerOptions| The data to apply.
 ]]
         )
     end)
