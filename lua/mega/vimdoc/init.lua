@@ -10,7 +10,7 @@ local M = {}
 ---    Customize the output using these settings, if needed.
 ---
 function M.make_documentation_files(paths, options)
-    local core = require("mega.vimdoc._core")
+    local core = require("mega.vimdoc._core.core")
 
     core.make_documentation_files(paths, options)
 end

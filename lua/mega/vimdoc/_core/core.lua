@@ -1,6 +1,8 @@
 --- The file that auto-creates documentation for `mega.vimdoc`.
 
 local logging = require("mega.vimdoc._vendors.logging")
+local minidoc = require("mega.vimdoc._vendors.mini.doc.minidoc")
+local type_parse = require("mega.vimdoc._core.type_parse")
 
 local success, doc = pcall(require, "mini.doc")
 
@@ -19,6 +21,41 @@ if _G.MiniDoc == nil then
 end
 
 local _IS_WINDOWS = vim.fn.has("win32") or vim.fn.has("win64")
+
+_P.REAL_BUILTIN_TYPES = {
+    "any",
+    "boolean",
+    "function",
+    "integer",
+    "lightuserdata",
+    "nil",
+    "number",
+    "string",
+    "table",
+    "thread",
+    "userdata",
+}
+
+_P.BUILTIN_TYPES = vim.deepcopy(_P.REAL_BUILTIN_TYPES)
+table.insert(_P.BUILTIN_TYPES, "...")
+
+_P.BUILTIN_ARRAY_TYPES = {}
+
+for _, name in ipairs(_P.BUILTIN_TYPES) do
+    table.insert(_P.BUILTIN_ARRAY_TYPES, name .. "[]")
+end
+
+_P.TYPE_PATTERNS = {
+    "table%b<>",
+    "^%s*%b()",
+    "fun%b():%s*%S+",
+    "fun%b()",
+    "^%s*%b{}",
+    unpack(_P.REAL_BUILTIN_TYPES),
+    "%.%.%.",
+    "^%s*%b``",
+}
+
 local _LOGGER = logging.get_logger("mega.vimdoc._core")
 
 local M = {}
@@ -34,6 +71,23 @@ function _P.has_indent(line)
     end
 
     return line[1]:gmatch("^%s") == nil
+end
+
+--- Check if `name` is a built-in Lua type or something that a user made.
+---
+---@param name string The type name. e.g. `"number"`, `"something.Custom"`, etc.
+---@return boolean # If `true`, it means that `name` is not built-in.
+---
+function _P.is_custom_type(name)
+    if vim.tbl_contains(_P.BUILTIN_TYPES, name) then
+        return false
+    end
+
+    if vim.tbl_contains(_P.BUILTIN_ARRAY_TYPES, name) then
+        return false
+    end
+
+    return true
 end
 
 --- Check if `text` is the start of a function's parameters.
@@ -196,10 +250,15 @@ function _P.get_module_enabled_hooks(module_identifier, module_path, options)
         section[1] = _P.add_tag(class_name)
     end
 
-    local original_field_hook = hooks.sections["@field"]
-
     hooks.sections["@field"] = function(section)
-        original_field_hook(section)
+        if vim.tbl_isempty(section) then
+            return
+        end
+
+        minidoc.mark_optional(section)
+        minidoc.enclose_var_name(section)
+
+        section[1] = _P.enclose_custom_types_for_line(section[1], _P.get_named_type_identifiers(section[1]))
 
         for index, line in ipairs(section) do
             section[index] = _P.indent(line)
@@ -212,21 +271,31 @@ function _P.get_module_enabled_hooks(module_identifier, module_path, options)
         section:clear_lines()
     end
 
-    local original_param_hook = hooks.sections["@param"]
-
     hooks.sections["@param"] = function(section)
-        original_param_hook(section)
+        if vim.tbl_isempty(section) then
+            return
+        end
+
+        minidoc.mark_optional(section)
+        minidoc.enclose_var_name(section)
+
+        section[1] = _P.enclose_custom_types_for_line(section[1], _P.get_named_type_identifiers(section[1]))
 
         for index, line in ipairs(section) do
             section[index] = _P.indent(line)
         end
     end
 
-    local original_return_hook = hooks.sections["@return"]
-
     -- NOTE: The mini.doc has no indentation by default. Add it.
     hooks.sections["@return"] = function(section)
-        original_return_hook(section)
+        if vim.tbl_isempty(section) then
+            return
+        end
+
+        section[1] = _P.enclose_custom_types_for_line(section[1], _P.get_return_type_identifiers(section[1]))
+
+        minidoc.mark_optional(section)
+        minidoc.add_section_heading(section, "Return")
 
         for index = 2, #section do
             local line = section[index]
@@ -382,28 +451,6 @@ function _P.get_module_identifier(path)
     return nil
 end
 
--- local function _P.get_module_identifier(path) -- luacheck: ignore 212 -- unused argument
---     local file = io.open(path, "w")
---
---     if not file then
---         error(string.format('Path "%s" is not readable.', path), 0)
---     end
---
---     for line in file:lines() do
---         local match = line:match("---@module ['\"]([^'\"]+)['\"]")
---
---         if match then
---             return match
---         end
---
---         if not line:match("^%s*$") then
---             return nil
---         end
---     end
---
---     return nil
--- end
-
 --- Find the dot-separated way to import and use `path`.
 ---
 ---@param path string
@@ -441,6 +488,25 @@ function _P.get_module_namespace(path)
     )
 
     return namespaces[1]
+end
+
+--- Find the types from a `name-type_name[-description]` style of string.
+---
+--- e.g. `"variable_name string"` or `"variable_name string Some description"`.
+---
+---@param text string
+---    The raw Lua docstring text to parse.
+---@return string[]
+---    The found type names, if any. Important: We sort it in descending order
+---    to make other functions that use this data more efficient and accurate.
+---
+function _P.get_named_type_identifiers(text)
+    local names = _P.get_type_names_from_lua_docstring(text, { name = true })
+    table.sort(names, function(left, right)
+        return left > right
+    end)
+
+    return names
 end
 
 --- Find the sibling that comes before `section`, if any.
@@ -481,6 +547,25 @@ function _P.get_return_node(buffer)
     return return_node
 end
 
+--- Find the types from a `type_name[-description]` style of string.
+---
+--- e.g. `"string"` or `"string # Some description"`.
+---
+---@param text string
+---    The raw Lua docstring text to parse.
+---@return string[]
+---    The found type names, if any. Important: We sort it in descending order
+---    to make other functions that use this data more efficient and accurate.
+---
+function _P.get_return_type_identifiers(text)
+    local names = _P.get_type_names_from_lua_docstring(text, { name = false })
+    table.sort(names, function(left, right)
+        return left > right
+    end)
+
+    return names
+end
+
 --- Search all Vim plugins for importablue Lua files that match `path`.
 ---
 ---@param path string
@@ -503,6 +588,44 @@ function _P.get_vim_runtime_namespace_matches(path)
     end
 
     return output
+end
+
+--- Find all types (non-user-variable names) to consider for the documentation.
+---
+---@param summary string
+---    A first line text (which will later auto-create into documentation).
+---@param options {name: boolean}?
+---    Extra settings that control the function's logic. e.g. `name=true` will
+---    assume that the first word in `summary` is not a type but a variable
+---    name and the second word is the type, instead `name=false`, which
+---    assumes the first word is a type.
+---@return string[]
+---    All replaceable text that we need to surround with (), ``s, etc.
+---
+function _P.get_type_names_from_lua_docstring(summary, options)
+    options = vim.tbl_deep_extend("force", { name = true }, options or {})
+
+    local type_start
+
+    if options.name then
+        local _, space_end = summary:find("%s+")
+
+        if not space_end then
+            -- NOTE: This happens if the user provides a variable name but not
+            -- a type. Just ignore this case.
+            --
+            return {}
+        end
+
+        type_start = space_end
+    else
+        type_start = 0
+    end
+
+    local type_end = _P.find_type_end(summary:sub(type_start + 1, #summary))
+    local type_text = summary:sub(type_start + 1, type_end + type_start)
+
+    return type_parse.get_type_names(type_text)
 end
 
 --- Ensure there is one blank space around `section` by modifying it.
@@ -538,6 +661,132 @@ end
 ---
 function _P.add_tag(text)
     return (text:gsub("(%S+)", "%*%1%*"))
+end
+
+--- Wrap all type names found in `section` with || or ()s.
+---
+---@param section MiniDoc.Section A renderable blob of documentation text.
+---
+function _P.enclose_custom_types(section)
+    for index = 1, #section do
+        section[index] = _P.enclose_custom_types_for_line(section[index])
+    end
+end
+
+--- Add wrap markers around summary `text`.
+---
+---@param text string
+---    Either a name, name + type, and/or description. e.g. `"variable_name"`,
+---    `"some_variable_name string"`, `"string # some description."` or
+---    something else. It is assumed that `text` has at least one type that
+---    will need marker(s) applied.
+---@return string
+---    The modified `text`.
+---
+function _P.enclose_custom_types_for_line(text, names)
+    for _, name in ipairs(names) do
+        local escaped_name = vim.pesc(name)
+        local template = "`(%s)`"
+
+        if _P.is_custom_type(name) then
+            template = "|%s|"
+        end
+
+        text = text:gsub(escaped_name, string.format(template, name))
+    end
+
+    return text
+end
+
+--- Wrap the user-provided variable identifier in {}s.
+---
+---@param section MiniDoc.Section A renderable blob of documentation text.
+---
+function _P.enclose_variable_name(section)
+    if #section == 0 or section.type ~= "section" then
+        return
+    end
+
+    section[1] = section[1]:gsub("(%S+)", "{%1}", 1)
+end
+
+--- Find the last index `text` that represents the end of some type.
+---
+--- It's assumed that text's first character is a type and after the index is
+--- found there is non-text data (such as a descriptino or some other non-type
+--- data).
+---
+---@param text string A type + maybe some description. e.g. `"string Some description"`.
+---@return integer # A 1-or-more value indicating the point where the type stops.
+---
+function _P.find_type_end(text)
+    local function _get_longest_type_match(sub_text, start_absolute_index)
+        local indices = vim.tbl_map(function(pattern)
+            local start_, end_ = sub_text:find(pattern)
+
+            if not start_ or not end_ then
+                return math.huge
+            end
+
+            return start_absolute_index + end_
+        end, _P.TYPE_PATTERNS)
+
+        local result = vim.fn.reduce(indices, function(accumulator, current)
+            if accumulator == math.huge then
+                accumulator = 0
+            end
+
+            if not current then
+                return accumulator
+            end
+
+            if not accumulator or (current ~= math.huge and current > accumulator) then
+                accumulator = current
+            end
+
+            return accumulator
+        end)
+
+        return result
+    end
+
+    local function _get_next_index(text_, start_index)
+        local found_start_index, _ = text_:find("%s*" .. vim.pesc("|") .. "%s*", start_index)
+
+        return found_start_index
+    end
+
+    local start_absolute_index = 1
+    local text_count = #text
+
+    while true do
+        local sub_text = text:sub(start_absolute_index, text_count)
+        local result = _get_longest_type_match(sub_text, start_absolute_index)
+
+        if result == math.huge or result == 0 then
+            local next_relative_index = _get_next_index(sub_text, result)
+
+            if next_relative_index then
+                start_absolute_index = start_absolute_index + next_relative_index
+            else
+                local next_space = string.find(sub_text, " ")
+
+                if not next_space then
+                    return text_count
+                end
+
+                return start_absolute_index + next_space - 1
+            end
+        end
+
+        local next_relative_index = _get_next_index(sub_text, result)
+
+        if not next_relative_index then
+            return result
+        end
+
+        start_absolute_index = start_absolute_index + next_relative_index
+    end
 end
 
 --- Add leading whitespace to `text`, if `text` is not an empty line.
