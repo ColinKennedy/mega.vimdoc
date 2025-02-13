@@ -499,7 +499,28 @@ end)
 
 describe("bug fix", function()
     describe("@alias", function()
-        it("works with complex, partial aliases", function()
+        it("works with complex, partial aliases - 001", function()
+            _run_test(
+                [[
+---@alias Foo table<string, FooBar>
+
+---@class Thing
+---@field blah3 fun(value: table<string, FooBar>) | table<string, FooBar>
+---    Another replaced
+                ]],
+                [[
+==============================================================================
+------------------------------------------------------------------------------
+*Thing*
+
+Fields ~
+    {blah3} fun(value: table<`(string)`, |FooBar|>) | table<`(string)`, |FooBar|>
+       Another replaced
+]]
+            )
+        end)
+
+        it("works with complex, partial aliases - 002", function()
             _run_test(
                 [[
 ---@alias Foo table<string, FooBar>

@@ -501,7 +501,7 @@ end
 ---    to make other functions that use this data more efficient and accurate.
 ---
 function _P.get_named_type_identifiers(text)
-    local names = _P.get_type_names_from_lua_docstring(text)
+    local names = _P.get_type_names_from_lua_docstring(text, {name=true})
     table.sort(names, function(left, right)
         return left > right
     end)
@@ -608,14 +608,16 @@ function _P.get_type_names_from_lua_docstring(summary, options)
     local type_start
 
     if options.name then
-        type_start = summary:find("%s")
+        local _, space_end = summary:find("%s+")
 
-        if not type_start then
+        if not space_end then
             -- NOTE: This happens if the user provides a variable name but not
             -- a type. Just ignore this case.
             --
             return {}
         end
+
+        type_start = space_end
     else
         type_start = 0
     end
@@ -719,7 +721,7 @@ end
 ---
 function _P.find_type_end(text)
 
-    local function _get_longest_type_match(sub_text)
+    local function _get_longest_type_match(sub_text, start_absolute_index)
         local indices = vim.tbl_map(function(pattern)
             local start_, end_ = sub_text:find(pattern)
 
@@ -727,7 +729,7 @@ function _P.find_type_end(text)
                 return math.huge
             end
 
-            return end_
+            return start_absolute_index + end_
         end, _P.TYPE_PATTERNS)
 
         local result = vim.fn.reduce(indices, function(accumulator, current)
@@ -763,7 +765,7 @@ function _P.find_type_end(text)
 
     while true do
         local sub_text = text:sub(start_absolute_index, text_count)
-        local result = _get_longest_type_match(sub_text)
+        local result = _get_longest_type_match(sub_text, start_absolute_index)
 
         if result == math.huge or result == 0 then
             if previous then
