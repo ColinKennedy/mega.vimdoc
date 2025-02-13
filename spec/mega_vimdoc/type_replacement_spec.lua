@@ -406,5 +406,31 @@ Parameters ~
                 _P.run_return_test(input, expected)
             end
         end)
+
+        it("works with a complex union + array + optional", function()
+            _P.run_generic_test(
+                [[
+--- Print the `names`.
+---
+---@param names string[] | Something Some text to print out. e.g. `{"a", "b", "c"}`.
+---
+function M.run_arbitrary_thing(names)
+    arbitrary_thing_runner.run(names)
+end
+                ]],
+                [[
+==============================================================================
+------------------------------------------------------------------------------
+                                                       *M.run_arbitrary_thing()*
+
+`M.run_arbitrary_thing`({names})
+
+Print the `names`.
+
+Parameters ~
+    {names} `(string)`[] | |Something| Some text to print out. e.g. `{"a", "b", "c"}`.
+]]
+            )
+        end)
     end)
 end)
