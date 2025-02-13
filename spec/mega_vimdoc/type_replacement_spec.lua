@@ -359,32 +359,31 @@ describe("types", function()
             _P.run_return_test(input, expected)
         end)
 
-        -- TODO: Finish this
---         it("works with array + optional #current", function()
---             _P.run_generic_test(
---                 [[
--- --- Print the `names`.
--- ---
--- ---@param names string[]? Some text to print out. e.g. `{"a", "b", "c"}`.
--- ---
--- function M.run_arbitrary_thing(names)
---     arbitrary_thing_runner.run(names)
--- end
---                 ]],
---                 [[
--- ==============================================================================
--- ------------------------------------------------------------------------------
---                                                        *M.run_arbitrary_thing()*
---
--- `M.run_arbitrary_thing`({names})
---
--- Print the `names`.
---
--- Parameters ~
---     {names} `(string)`[]? Some text to print out. e.g. `{"a", "b", "c"}`.
--- ]]
---             )
---         end)
+        it("works with array + optional", function()
+            _P.run_generic_test(
+                [[
+--- Print the `names`.
+---
+---@param names string[]? Some text to print out. e.g. `{"a", "b", "c"}`.
+---
+function M.run_arbitrary_thing(names)
+    arbitrary_thing_runner.run(names)
+end
+                ]],
+                [[
+==============================================================================
+------------------------------------------------------------------------------
+                                                       *M.run_arbitrary_thing()*
+
+`M.run_arbitrary_thing`({names})
+
+Print the `names`.
+
+Parameters ~
+    {names} `(string)`[]? Some text to print out. e.g. `{"a", "b", "c"}`.
+]]
+            )
+        end)
     end)
 
     describe("union", function()
