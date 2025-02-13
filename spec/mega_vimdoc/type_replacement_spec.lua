@@ -358,5 +358,54 @@ describe("types", function()
             _P.run_param_test(input, expected)
             _P.run_return_test(input, expected)
         end)
+
+        -- TODO: Finish this
+--         it("works with array + optional #current", function()
+--             _P.run_generic_test(
+--                 [[
+-- --- Print the `names`.
+-- ---
+-- ---@param names string[]? Some text to print out. e.g. `{"a", "b", "c"}`.
+-- ---
+-- function M.run_arbitrary_thing(names)
+--     arbitrary_thing_runner.run(names)
+-- end
+--                 ]],
+--                 [[
+-- ==============================================================================
+-- ------------------------------------------------------------------------------
+--                                                        *M.run_arbitrary_thing()*
+--
+-- `M.run_arbitrary_thing`({names})
+--
+-- Print the `names`.
+--
+-- Parameters ~
+--     {names} `(string)`[]? Some text to print out. e.g. `{"a", "b", "c"}`.
+-- ]]
+--             )
+--         end)
+    end)
+
+    describe("union", function()
+        it("works with basic types", function()
+            for _, name in ipairs(_EXAMPLE_BUILT_IN_TYPE_NAMES) do
+                local input = name .. " | " .. name
+                local expected = string.format("`(%s)` | `(%s)`", name, name)
+                _P.run_field_test(input, expected)
+                _P.run_param_test(input, expected)
+                _P.run_return_test(input, expected)
+            end
+        end)
+
+        it("works with custom types", function()
+            for _, name in ipairs(_EXAMPLE_CUSTOM_CLASS_NAMES) do
+                local input = name .. " | " .. name
+                local expected = string.format("|%s| | |%s|", name, name)
+                _P.run_field_test(input, expected)
+                _P.run_param_test(input, expected)
+                _P.run_return_test(input, expected)
+            end
+        end)
     end)
 end)
