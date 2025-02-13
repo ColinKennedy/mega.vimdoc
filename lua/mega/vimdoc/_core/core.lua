@@ -47,13 +47,13 @@ end
 
 _P.TYPE_PATTERNS = {
     "table%b<>",
-    "%b()",
+    "^%s*%b()",
     "fun%b():%s*%S+",
     "fun%b()",
-    "%b{}",
+    "^%s*%b{}",
     unpack(_P.REAL_BUILTIN_TYPES),
     "%.%.%.",
-    "%b``",
+    "^%s*%b``",
 }
 
 local _LOGGER = logging.get_logger("mega.vimdoc._core")
@@ -718,50 +718,75 @@ end
 ---@return integer # A 1-or-more value indicating the point where the type stops.
 ---
 function _P.find_type_end(text)
-    local indices = vim.tbl_map(function(pattern)
-        local start_, end_ = text:find(pattern)
 
-        if not start_ or not end_ then
-            return math.huge
-        end
+    local function _get_longest_type_match(sub_text)
+        local indices = vim.tbl_map(function(pattern)
+            local start_, end_ = sub_text:find(pattern)
 
-        return end_
-    end, _P.TYPE_PATTERNS)
+            if not start_ or not end_ then
+                return math.huge
+            end
 
-    local result = vim.fn.reduce(indices, function(accumulator, current)
-        if accumulator == math.huge then
-            accumulator = 0
-        end
+            return end_
+        end, _P.TYPE_PATTERNS)
 
-        if not current then
+        local result = vim.fn.reduce(indices, function(accumulator, current)
+            if accumulator == math.huge then
+                accumulator = 0
+            end
+
+            if not current then
+                return accumulator
+            end
+
+            if not accumulator or (current ~= math.huge and current > accumulator) then
+                accumulator = current
+            end
+
             return accumulator
-        end
+        end)
 
-        if not accumulator or (current ~= math.huge and current > accumulator) then
-            accumulator = current
-        end
-
-        return accumulator
-    end)
-
-    if result ~= math.huge and result ~= 0 then
-        -- NOTE: We found a match!
         return result
     end
 
-    -- NOTE: We assume at this point that the type is something like
-    -- "foo.bar.Fizz_Buzz", which cannot contain spaces. So if we find a space,
-    -- we know we've reached the end of the tpye and the start of a docstring
-    -- description.
-    --
-    local next_space = string.find(text, " ")
+    local function _get_next_index(text, start_index)
+        local found_start_index, _ = text:find("%s*" .. vim.pesc("|"), start_index)
 
-    if next_space then
-        return next_space - 1
+        return found_start_index
     end
 
-    -- NOTE: If we got to this point, it means that `text` is a type.
-    return #text
+    ---@type integer?
+    local previous
+
+    local start_absolute_index = 1
+    local text_count = #text
+
+    while true do
+        local sub_text = text:sub(start_absolute_index, text_count)
+        local result = _get_longest_type_match(sub_text)
+
+        if result == math.huge or result == 0 then
+            if previous then
+                return previous
+            end
+
+            local next_space = string.find(sub_text, " ")
+
+            if not next_space then
+                return text_count
+            end
+
+            return start_absolute_index + next_space - 1
+        end
+
+        local next_relative_index = _get_next_index(sub_text, result)
+
+        if not next_relative_index then
+            return result
+        end
+
+        start_absolute_index = start_absolute_index + next_relative_index
+    end
 end
 
 --- Add leading whitespace to `text`, if `text` is not an empty line.
