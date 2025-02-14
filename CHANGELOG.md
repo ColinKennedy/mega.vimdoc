@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/ColinKennedy/mega.vimdoc/compare/v1.0.6...v1.1.0) (2025-02-14)
+
+
+### Features
+
+* **type:** added better type markers ([fdbbdbe](https://github.com/ColinKennedy/mega.vimdoc/commit/fdbbdbe1138c3a1d7011dee8b2300d65e789b91d))
+
 ## [1.0.6](https://github.com/ColinKennedy/mega.vimdoc/compare/v1.0.5...v1.0.6) (2025-02-09)
 
 
