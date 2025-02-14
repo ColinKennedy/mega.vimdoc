@@ -752,13 +752,10 @@ function _P.find_type_end(text)
     end
 
     local function _get_next_index(text, start_index)
-        local found_start_index, _ = text:find("%s*" .. vim.pesc("|"), start_index)
+        local found_start_index, _ = text:find("%s*" .. vim.pesc("|") .. "%s*", start_index)
 
         return found_start_index
     end
-
-    ---@type integer?
-    local previous
 
     local start_absolute_index = 1
     local text_count = #text
@@ -768,17 +765,19 @@ function _P.find_type_end(text)
         local result = _get_longest_type_match(sub_text, start_absolute_index)
 
         if result == math.huge or result == 0 then
-            if previous then
-                return previous
+            local next_relative_index = _get_next_index(sub_text, result)
+
+            if next_relative_index then
+                start_absolute_index = start_absolute_index + next_relative_index
+            else
+                local next_space = string.find(sub_text, " ")
+
+                if not next_space then
+                    return text_count
+                end
+
+                return start_absolute_index + next_space - 1
             end
-
-            local next_space = string.find(sub_text, " ")
-
-            if not next_space then
-                return text_count
-            end
-
-            return start_absolute_index + next_space - 1
         end
 
         local next_relative_index = _get_next_index(sub_text, result)
