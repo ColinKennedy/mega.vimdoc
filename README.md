@@ -12,9 +12,11 @@ Convert Lua source code into Vimdoc syntax.
 
 # ⚡️Features
 
-- Links to custom classes
+- Auto-links to custom classes. Just hover over a type and `CTRL-]`!
 - Auto-indents / formats code
-- Auto-replaces Lua namespaces with the module path
+- Auto-replaces Lua namespaces with the module path.
+    - No more functions labelled like `M.get_items`
+
 
 ## Gallery
 ### Class
@@ -39,6 +41,57 @@ Convert Lua source code into Vimdoc syntax.
     version = "v1.*",
 }
 ```
+
+
+# Comparison To Other Plugins
+Other vimdoc generators exist, such as [mini.doc](https://github.com/echasnovski/mini.doc).
+`mega.vimdoc` can do what most other generators can but has extra features that
+set it apart.
+
+
+## More And Better Automated Tags
+Classes, Functions, and other types are auto-tagged with Vimdoc tags. For
+example this plugin might output this vimdoc `.txt` file.
+
+```vimdoc
+`mega.vimdoc.make_documentation_files`({paths}, {options})
+
+Convert the files in this plug-in from Lua docstrings to Vimdoc documentation.
+
+Parameters ~
+    {paths} |mega.vimdoc.AutoDocumentationEntry|[]
+       All of the source + destination pairs to process.
+    {options} |mega.vimdoc.AutoDocumentationOptions|?
+       Customize the output using these settings, if needed.
+```
+
+`mega.vimdoc` auto-detects the custom type and places the `||` tags in just the
+right place. The end result - just hover your cursor over it and press `CTRL-]`
+and jump straight to its definition.
+
+The logic for this type-discovery is pretty good and works even with complex,
+nested types. The point is, using `mega.vimdoc` makes your documentation smarter.
+
+
+## Automatic namespace replacements. So for example like:
+
+`lua/some/file.lua`
+```lua
+local M
+
+---@param foo string Description.
+function M.bar(foo) end
+
+return M
+```
+
+With other documentation generators, the above would be documented literally as
+`M.bar`. With `mega.vimdoc`, the function is replaced with `some.file.bar`
+because it has the full context.
+
+
+### `---@meta` support
+The automated module replacement described above also supports `---@meta` annotations!
 
 
 # ✅ Tests
