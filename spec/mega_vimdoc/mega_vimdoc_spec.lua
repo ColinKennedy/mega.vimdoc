@@ -577,7 +577,7 @@ Fields ~
 *some._LevelThing*
 
 Fields ~
-    {blah_blah} ("trace" | "debug" | "info" | "warn" | "error" | "fatal") Some description
+    {blah_blah} "trace" | "debug" | "info" | "warn" | "error" | "fatal" Some description
     {infix} |some._LevelInner| Another description
     {blah_optional} ("trace" | "debug" | "info" | "warn" | "error" | "fatal")? Last description
     {prefix} |some.Some_Level| Another description
@@ -1082,7 +1082,7 @@ Fields ~
     {float_precision} `(number)`
        A positive value (max of 1) to indicate the rounding precision. e.g.
        0.01 rounds to every hundredths.
-    {level} ("trace" | "debug" | "info" | "warn" | "error" | "fatal")
+    {level} "trace" | "debug" | "info" | "warn" | "error" | "fatal"
        The minimum severity needed for this logger instance to output a log.
     {name} `(string)`
        An identifier for this logger.
