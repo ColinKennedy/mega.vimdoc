@@ -328,6 +328,66 @@ describe("types", function()
                 _P.run_return_test(input, expected)
             end)
         end)
+
+        describe("special", function()
+            it("does not replace the middle of a namespace", function()
+                _P.run_generic_test(
+                    [[
+---@alias something Else
+
+---@class foo.something.Bar
+---@field something foo.something.Item
+---@field other fun(value: foo.something.Bar): nil
+
+---@param something foo.something.Item
+---@return something | foo.something.Item | foo.something.New
+function something(something) return something end
+(string) '==============================================================================
+------------------------------------------------------------------------------
+*foo.something.Bar*
+
+Fields ~
+    {something} |foo.something.Item|
+    {other} fun(value: |foo.something.Bar|): `(nil)`
+
+------------------------------------------------------------------------------
+                                                                   *something()*
+
+`something`({Else})
+
+Parameters ~
+    {something} |foo.something.Item|
+
+Return ~
+    |Else| | |foo.something.Item| | |foo.something.New|
+                    ]],
+                    [[
+==============================================================================
+------------------------------------------------------------------------------
+*foo.something.Bar*
+
+Fields ~
+    {something} |foo.something.Item|
+    {other} fun(value: |foo.something.Bar|): `(nil)`
+
+------------------------------------------------------------------------------
+                                                                   *something()*
+
+`something`({Else})
+
+Parameters ~
+    {something} |foo.something.Item|
+
+Return ~
+    |Else| | |foo.something.Item| | |foo.something.New|
+
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+]]
+                )
+            end)
+        end)
     end)
 
     describe("optional", function()

@@ -15,7 +15,9 @@
 ---@class MiniDoc.Section
 ---    A renderable blob of text (which will later auto-create into documentation).
 ---    This class is from mini.doc. We're just type-annotating it so `llscheck` is happy.
----@see https://github.com/echasnovski/mini.doc
+---
+---@source https://github.com/echasnovski/mini.doc
+---
 ---@field info MiniDoc.SectionInfo
 ---    A description of what this section is meant to display / represent.
 ---@field parent MiniDoc.Section?
