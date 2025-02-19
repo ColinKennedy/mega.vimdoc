@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.2.0](https://github.com/ColinKennedy/mega.vimdoc/compare/v1.1.1...v1.2.0) (2025-02-19)
+
+
+### Features
+
+* **discovery:** private classes and functions are auto-hidden now ([ca9f6dc](https://github.com/ColinKennedy/mega.vimdoc/commit/ca9f6dc862b270c629f4935c8ff9da6972414d70))
+
+
+### Bug Fixes
+
+* **text:** inherited [@class](https://github.com/class) now render correctly ([ca9f6dc](https://github.com/ColinKennedy/mega.vimdoc/commit/ca9f6dc862b270c629f4935c8ff9da6972414d70))
+
 ## [1.1.1](https://github.com/ColinKennedy/mega.vimdoc/compare/v1.1.0...v1.1.1) (2025-02-18)
 
 
