@@ -1,13 +1,12 @@
 *mega.vimdoc-news.txt*
 
-Notable changes since mega.vimdoc 1.0
+Notable changes since mega.vimdoc 1.1
 
 
 ===============================================================================
 NEW FEATURES                                     *mega.vimdoc-new-features*
 
-- Fast navigation to custom types is now supported.
-    - See `:help CTRL-]` for details.
+- namespaced class and functions are now auto-hidden
 
 
 ===============================================================================

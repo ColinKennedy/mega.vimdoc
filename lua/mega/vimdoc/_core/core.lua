@@ -237,7 +237,10 @@ function _P.get_module_enabled_hooks(module_identifier, module_path, options)
             return
         end
 
-        local class_name = section[1]
+        -- NOTE: A class can inherit from a base class. e.g. `"Foo : Bar"`, so
+        -- we ignore everything after the first word.
+        --
+        local class_name = (section[1]:match("^%S*"))
 
         if vim.tbl_contains(seen_tags, class_name) then
             section:clear_lines()
@@ -343,6 +346,30 @@ function _P.get_module_enabled_hooks(module_identifier, module_path, options)
         table.insert(seen_tags, tag_name)
 
         original_tag_hook(section)
+    end
+
+    local original_block_pre_hook = hooks.block_pre
+
+    hooks.block_pre = function(block)
+        original_block_pre_hook(block)
+
+        if not module_identifier then
+            return
+        end
+
+        if not block:has_lines() then
+            return
+        end
+
+        local section = block[1]
+
+        if section.info.id == "@tag" then
+            -- NOTE: We found a function. Let's make sure it's in-scope
+
+            if not vim.startswith(section[1], module_identifier .. ".") then
+                block:clear_lines()
+            end
+        end
     end
 
     local original_block_post_hook = hooks.block_post

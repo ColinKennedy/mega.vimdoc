@@ -101,6 +101,61 @@ Return ~
         )
     end)
 
+    it("hides private functions by default if they are not return-ed", function()
+        _run_test(
+            [[
+local _P = {}
+local M = {}
+
+---@class FooThing
+---    I am a Foo description.
+M.Foo = {}
+
+---@class BarThing
+---    I am a Bar description.
+_P.Bar = {}
+
+---@return integer # Blah.
+function _P.bar()
+end
+
+---@return integer # Blah.
+local function thing()
+end
+
+---@return integer # Blah.
+function M.foo()
+end
+
+---@return integer # Blah.
+---@private
+function M.another()
+end
+
+return M
+            ]],
+            [[
+==============================================================================
+------------------------------------------------------------------------------
+                                                                         *M.Foo*
+
+`Foo`
+
+*FooThing*
+   I am a Foo description.
+
+------------------------------------------------------------------------------
+                                                                       *M.foo()*
+
+`foo`()
+
+
+Return ~
+    `(integer)` Blah.
+]]
+        )
+    end)
+
     it("hides the module name from the signature if disabled", function()
         _run_test(
             [[
@@ -270,6 +325,21 @@ Return ~
 end)
 
 describe("@class", function()
+    it("works with base class inheritance #current", function()
+        _run_test(
+            [[
+---@class Foo : SomeOtherBaseClass
+---    I am a Foo class!
+            ]],
+            [[
+==============================================================================
+------------------------------------------------------------------------------
+*Foo*
+   I am a Foo class!
+]]
+        )
+    end)
+
     it("works with metatable definitions", function()
         _run_test(
             [[
