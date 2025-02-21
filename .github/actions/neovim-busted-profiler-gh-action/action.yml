@@ -111,18 +111,19 @@ runs:
       with:
         luaVersion: ${{ inputs.lua_version }}
 
-    - uses: leafo/gh-actions-luarocks@v4
+    - name: Install luarocks
+      uses: leafo/gh-actions-luarocks@v4
 
-    # TODO: Replace this later once I have a proper mega.busted to work with
-    # - name: Build Dependencies
-    #   run: |
-    #     luarocks install mega.busted --local
-    #     luarocks install nlua --local
+    - name: Build Dependencies
+      run: |
+        luarocks install mega.busted --local
+
     - name: Build Dependencies - mega.busted
       uses: actions/checkout@v4
       with:
         repository: "ColinKennedy/mega.busted"
         path: ".dependencies/mega.busted"
+
     - name: Build Dependencies
       run: |
         luarocks install nlua --local

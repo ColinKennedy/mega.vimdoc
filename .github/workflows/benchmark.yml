@@ -14,5 +14,4 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Profile Repository
-      - uses: ./.github/actions/neovim-busted-profiler-gh-action
-
+        uses: ./.github/actions/neovim-busted-profiler-gh-action
