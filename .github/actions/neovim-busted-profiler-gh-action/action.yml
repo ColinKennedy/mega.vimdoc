@@ -85,27 +85,39 @@ runs:
   using: "composite"
   steps:
     - name: Check If The Profiling Branch Exists
+      uses: knicknic/os-specific-run@v1.0.4
       id: check_branch
-      run: |
-        git fetch origin
-        if git show-ref --verify --quiet refs/heads/${{ inputs.branch }}; then
-          echo "Branch exists. Proceeding with merge."
-          echo "branch_exists=true" >> $GITHUB_OUTPUT
-        else
-          echo "Branch does not exist. Will create a new one."
-          echo "branch_exists=false" >> $GITHUB_OUTPUT
-        fi
+      env:
+        CHECK_FOR_BRANCH: |
+          git fetch origin
+          if git show-ref --verify --quiet refs/heads/${{ inputs.branch }}; then
+            echo "Branch exists. Proceeding with merge."
+            echo "branch_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "Branch does not exist. Will create a new one."
+            echo "branch_exists=false" >> $GITHUB_OUTPUT
+          fi
+      with:
+        macos: ${{ env.CHECK_FOR_BRANCH }}
+        linux: ${{ env.CHECK_FOR_BRANCH }}
+        windows: |
+          if (git show-ref --verify --quiet refs/heads/${{ inputs.branch }})
+          {
+            echo "Branch exists. Proceeding with merge."
+            echo "branch_exists=true" >> $env:GITHUB_ENV
+          }
+          else
+          {
+            echo "Branch does not exist. Will create a new one."
+            echo "executable=false" >> $env:GITHUB_ENV
+          }
 
     - name: Create A New Profiling Branch
       if: steps.check_branch.outputs.branch_exists == "false"
+      shell: bash
       run: |
-        git checkout -b ${{ inputs.branch }}
-
-    - name: Merge Latest Changes From Main
-      if: steps.check_branch.outputs.branch_exists == "true"
-      run: |
-        git checkout ${{ inputs.branch }}
-        git merge `git symbolic-ref refs/remotes/origin/HEAD --short` --no-edit
+        git checkout --orphan ${{ inputs.branch }}
+        git rm -rf .
 
     - name: Setup Lua
       if: inputs.lua_version != false
@@ -147,10 +159,11 @@ runs:
       run: |
         nlua -e 'require("mega.busted.make_busted_profile").main()'
 
-    - name: Push Changes
-      uses: stefanzweifel/git-auto-commit-action@v4
-      with:
-        commit_author: ${{ inputs.commit_author }}
-        commit_message: ${{ inputs.commit_message }}
-        commit_user_email: ${{ inputs.commit_user_name }}
-        commit_user_name: ${{ inputs.commit_user_name }}
+    # TODO: Finish
+    # - name: Push Changes
+    #   uses: stefanzweifel/git-auto-commit-action@v4
+    #   with:
+    #     commit_author: ${{ inputs.commit_author }}
+    #     commit_message: ${{ inputs.commit_message }}
+    #     commit_user_email: ${{ inputs.commit_user_name }}
+    #     commit_user_name: ${{ inputs.commit_user_name }}
