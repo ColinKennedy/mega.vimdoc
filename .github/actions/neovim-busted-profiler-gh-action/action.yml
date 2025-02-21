@@ -90,6 +90,7 @@ runs:
       env:
         CHECK_FOR_BRANCH: |
           git fetch origin
+
           if git show-ref --verify --quiet refs/heads/${{ inputs.branch }}; then
             echo "Branch exists. Proceeding with merge."
             echo "branch_exists=true" >> $GITHUB_OUTPUT
@@ -101,6 +102,8 @@ runs:
         macos: ${{ env.CHECK_FOR_BRANCH }}
         linux: ${{ env.CHECK_FOR_BRANCH }}
         windows: |
+          git fetch origin
+
           if (git show-ref --verify --quiet refs/heads/${{ inputs.branch }})
           {
             echo "Branch exists. Proceeding with merge."
