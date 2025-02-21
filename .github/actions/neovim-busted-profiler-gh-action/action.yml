@@ -1,6 +1,6 @@
-name = "Neovim Busted Profiler"
+name: "Neovim Busted Profiler"
 
-description = "Automatically profile Neovim plugins (using busted unittests)"
+description: "Automatically profile Neovim plugins (using busted unittests)"
 
 inputs:
   # profiler-related settings
