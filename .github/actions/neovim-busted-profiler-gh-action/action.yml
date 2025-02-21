@@ -118,15 +118,6 @@ runs:
     - name: Build Dependencies
       run: |
         luarocks install mega.busted --local
-
-    - name: Build Dependencies - mega.busted
-      uses: actions/checkout@v4
-      with:
-        repository: "ColinKennedy/mega.busted"
-        path: ".dependencies/mega.busted"
-
-    - name: Build Dependencies
-      run: |
         luarocks install nlua --local
 
     - name: Install Gnuplot
@@ -153,7 +144,7 @@ runs:
         BUSTED_PROFILER_TAGGED_DIRECTORIES: ${{ inputs.tagged_directories }}
         BUSTED_PROFILER_TIMING_THRESHOLD: ${{ inputs.timing_threshold }}
       run: |
-        nlua -e 'require("mega.busted.make_profile").main()'
+        nlua -e 'require("mega.busted.make_busted_profile").main()'
 
     - name: Push Changes
       uses: stefanzweifel/git-auto-commit-action@v4
