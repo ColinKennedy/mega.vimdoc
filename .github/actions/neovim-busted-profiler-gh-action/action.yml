@@ -1,0 +1,162 @@
+name = "Neovim Busted Profiler"
+
+description = "Automatically profile Neovim plugins (using busted unittests)"
+
+inputs:
+  # profiler-related settings
+  command:
+    default: '.'
+    description: 'The terminal command to run'
+    required: false
+  command_type:
+    default: true
+    description: '"busted" will run as profile your unittests. "startup" will profile Neovim start-up time'
+    required: false
+  keep_old_tag_directories:
+    default: false
+    description: 'If false, tagged unittests that are no longer in-use will be auto-deleted. If true, they are left untouched'
+    required: false
+  keep_temporary_files:
+    default: false
+    description: "If false, any intermediary files during profiling are deleted. Otherwise don't delete them. This is useful for debugging issues"
+    required: false
+  maximum_tries:
+    default: 10
+    description: 'The number of consecutive wins that a test suite must get before it that run is considered "fastest"'
+    required: false
+  minimum_samples:
+    default: 2
+    description: 'The number of profile results needed to start creating .png graph files.'
+    required: false
+  output_path:
+    default: '${{ github.workspace }}'
+    description: 'The directory on-disk where profile results are written to'
+    required: false
+  tagged_directories:
+    default: ".*"
+    description: 'A comma-separated list of busted unittest tags to separately profile.'
+    required: false
+  timing_threshold:
+    default: 30
+    description: 'The "top slowest" functions to display'
+    required: false
+  version:
+    default: '${{ github.event.release.tag_name }}'
+    description: 'The label used for graphing your profiler results. e.g. v1.2.3'
+    required: false
+
+  # git-related settings
+  auto_push:
+    default: true
+    description: 'Git commit + git push your profile results'
+    required: false
+  branch:
+    default: 'benchmarks'
+    description: 'The branch to send profile statistics to'
+    required: false
+  commit_author: 'github-actions[bot] <github-actions[bot]@users.noreply.github.com>'
+    description: 'The automation git author display name'
+    required: false
+  commit_message:
+    default: 'chore(profiler): Auto-generate flamegraph & timing statistics'
+    description: 'The git message whenever we have new profile data to commit'
+    required: false
+  commit_user_email: 'github-actions[bot]@users.noreply.github.com'
+    description: 'A fake email for the automation git author'
+    required: false
+  commit_user_name:
+    default: 'github-actions[bot]'
+    description: 'The automation git author'
+    required: false
+
+  # rare configuration settings
+  lua_version:
+    default: 'luajit-openresty'
+    description: 'The Lua version to use for Luarocks and other commands'
+    required: false
+  neovim_version:
+    default: 'stable'
+    description: 'The Neovim version to run profiler results with'
+    required: false
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Check If The Profiling Branch Exists
+      id: check_branch
+      run: |
+        git fetch origin
+        if git show-ref --verify --quiet refs/heads/${{ inputs.branch }}; then
+          echo "Branch exists. Proceeding with merge."
+          echo "branch_exists=true" >> $GITHUB_OUTPUT
+        else
+          echo "Branch does not exist. Will create a new one."
+          echo "branch_exists=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Create A New Profiling Branch
+      if: steps.check_branch.outputs.branch_exists == 'false'
+      run: |
+        git checkout -b ${{ inputs.branch }}
+
+    - name: Merge Latest Changes From Main
+      if: steps.check_branch.outputs.branch_exists == 'true'
+      run: |
+        git checkout ${{ inputs.branch }}
+        git merge `git symbolic-ref refs/remotes/origin/HEAD --short` --no-edit
+
+    - name: Setup Lua
+      if: inputs.lua_version != false
+      uses: leafo/gh-actions-lua@v10
+      with:
+        luaVersion: ${{ inputs.lua_version }}
+
+    - uses: leafo/gh-actions-luarocks@v4
+
+    # TODO: Replace this later once I have a proper mega.busted to work with
+    # - name: Build Dependencies
+    #   run: |
+    #     luarocks install mega.busted --local
+    #     luarocks install nlua --local
+    - name: Build Dependencies - mega.busted
+      uses: actions/checkout@v4
+      with:
+        repository: "ColinKennedy/mega.busted"
+        path: ".dependencies/mega.busted"
+    - name: Build Dependencies
+      run: |
+        luarocks install nlua --local
+
+    - name: Install Gnuplot
+      if: ${{ inputs.gnuplot_install == 'true' }}
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gnuplot || /bin/true
+
+    - name: Setup Neovim
+      if: inputs.neovim_version != false
+      uses: rhysd/action-setup-vim@v1
+      with:
+        neovim: true
+        version: stable
+
+    - name: Create Flamegraph
+      env:
+        BUSTED_PROFILER_FLAMEGRAPH_OUTPUT_PATH: ${{ inputs.output_path }}
+        BUSTED_PROFILER_FLAMEGRAPH_VERSION: ${{ inputs.version }}
+        BUSTED_PROFILER_KEEP_OLD_TAG_DIRECTORIES: ${{ inputs.keep_old_tag_directories }}
+        BUSTED_PROFILER_KEEP_TEMPORARY_FILES: ${{ inputs.keep_temporary_files }}
+        BUSTED_PROFILER_MAXIMUM_TRIES: ${{ inputs.maximum_tries }}
+        BUSTED_PROFILER_MINIMUM_SAMPLES: ${{ inputs.minimum_samples }}
+        BUSTED_PROFILER_TAGGED_DIRECTORIES: ${{ inputs.tagged_directories }}
+        BUSTED_PROFILER_TIMING_THRESHOLD: ${{ inputs.timing_threshold }}
+      run: |
+        nlua -e 'require("mega.busted.make_profile").main()'
+
+    - name: Push Changes
+      uses: stefanzweifel/git-auto-commit-action@v4
+      with:
+        commit_author: ${{ inputs.commit_author }}
+        commit_message: ${{ inputs.commit_message }}
+        commit_user_email: ${{ inputs.commit_user_name }}
+        commit_user_name: ${{ inputs.commit_user_name }}
