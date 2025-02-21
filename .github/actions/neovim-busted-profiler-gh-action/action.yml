@@ -135,7 +135,6 @@ runs:
       shell: bash
       run: |
         luarocks install mega.busted --local
-        luarocks install nlua --local
 
     - name: Install Gnuplot
       shell: bash
@@ -162,7 +161,7 @@ runs:
         MEGA_BUSTED_PROFILER_TAGGED_DIRECTORIES: ${{ inputs.tagged_directories }}
         MEGA_BUSTED_PROFILER_TIMING_THRESHOLD: ${{ inputs.timing_threshold }}
       run: |
-        nlua -e 'require("mega.busted.make_busted_profile").main()'
+        nvim --clean --headless --cmd 'lua require("mega.busted.make_busted_profile").main()' --cmd 'quit'
 
     # TODO: Finish
     # - name: Push Changes
