@@ -132,12 +132,13 @@ runs:
       uses: leafo/gh-actions-luarocks@v4
 
     - name: Build Dependencies
+      shell: bash
       run: |
         luarocks install mega.busted --local
         luarocks install nlua --local
 
     - name: Install Gnuplot
-      if: ${{ inputs.gnuplot_install == "true" }}
+      shell: bash
       run: |
         sudo apt-get update
         sudo apt-get install -y gnuplot || /bin/true
@@ -145,11 +146,13 @@ runs:
     - name: Setup Neovim
       if: inputs.neovim_version != false
       uses: rhysd/action-setup-vim@v1
+      shell: bash
       with:
         neovim: true
         version: stable
 
     - name: Create Flamegraph
+      shell: bash
       env:
         BUSTED_PROFILER_FLAMEGRAPH_OUTPUT_PATH: ${{ inputs.output_path }}
         BUSTED_PROFILER_FLAMEGRAPH_VERSION: ${{ inputs.version }}
