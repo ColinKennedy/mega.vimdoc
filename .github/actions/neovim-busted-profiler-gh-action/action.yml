@@ -38,7 +38,7 @@ inputs:
     required: false
   timing_threshold:
     default: 30
-    description: "The "top slowest" functions to display"
+    description: 'The "top slowest" functions to display'
     required: false
   version:
     default: "${{ github.event.release.tag_name }}"
@@ -62,7 +62,8 @@ inputs:
     default: "chore(profiler): Auto-generate flamegraph & timing statistics"
     description: "The git message whenever we have new profile data to commit"
     required: false
-  commit_user_email: "github-actions[bot]@users.noreply.github.com"
+  commit_user_email:
+    default: "github-actions[bot]@users.noreply.github.com"
     description: "A fake email for the automation git author"
     required: false
   commit_user_name:
