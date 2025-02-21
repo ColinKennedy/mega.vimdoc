@@ -116,7 +116,7 @@ runs:
           }
 
     - name: Create A New Profiling Branch
-      if: steps.check_branch.outputs.branch_exists == "false"
+      if: steps.check_branch.outputs.branch_exists == false
       shell: bash
       run: |
         git checkout --orphan ${{ inputs.branch }}
