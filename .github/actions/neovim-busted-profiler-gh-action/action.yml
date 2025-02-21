@@ -10,7 +10,7 @@ inputs:
     required: false
   command_type:
     default: true
-    description: ""busted" will run as profile your unittests. "startup" will profile Neovim start-up time"
+    description: '"busted" will run as profile your unittests. "startup" will profile Neovim start-up time'
     required: false
   keep_old_tag_directories:
     default: false
