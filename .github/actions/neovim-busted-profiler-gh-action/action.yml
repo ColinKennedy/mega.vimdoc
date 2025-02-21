@@ -146,7 +146,6 @@ runs:
     - name: Setup Neovim
       if: inputs.neovim_version != false
       uses: rhysd/action-setup-vim@v1
-      shell: bash
       with:
         neovim: true
         version: stable
