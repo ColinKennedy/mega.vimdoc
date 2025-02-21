@@ -153,14 +153,14 @@ runs:
     - name: Create Flamegraph
       shell: bash
       env:
-        BUSTED_PROFILER_FLAMEGRAPH_OUTPUT_PATH: ${{ inputs.output_path }}
-        BUSTED_PROFILER_FLAMEGRAPH_VERSION: ${{ inputs.version }}
-        BUSTED_PROFILER_KEEP_OLD_TAG_DIRECTORIES: ${{ inputs.keep_old_tag_directories }}
-        BUSTED_PROFILER_KEEP_TEMPORARY_FILES: ${{ inputs.keep_temporary_files }}
-        BUSTED_PROFILER_MAXIMUM_TRIES: ${{ inputs.maximum_tries }}
-        BUSTED_PROFILER_MINIMUM_SAMPLES: ${{ inputs.minimum_samples }}
-        BUSTED_PROFILER_TAGGED_DIRECTORIES: ${{ inputs.tagged_directories }}
-        BUSTED_PROFILER_TIMING_THRESHOLD: ${{ inputs.timing_threshold }}
+        MEGA_BUSTED_PROFILER_FLAMEGRAPH_OUTPUT_PATH: ${{ inputs.output_path }}
+        MEGA_BUSTED_PROFILER_FLAMEGRAPH_VERSION: ${{ inputs.version }}
+        MEGA_BUSTED_PROFILER_KEEP_OLD_TAG_DIRECTORIES: ${{ inputs.keep_old_tag_directories }}
+        MEGA_BUSTED_PROFILER_KEEP_TEMPORARY_FILES: ${{ inputs.keep_temporary_files }}
+        MEGA_BUSTED_PROFILER_MAXIMUM_TRIES: ${{ inputs.maximum_tries }}
+        MEGA_BUSTED_PROFILER_MINIMUM_SAMPLES: ${{ inputs.minimum_samples }}
+        MEGA_BUSTED_PROFILER_TAGGED_DIRECTORIES: ${{ inputs.tagged_directories }}
+        MEGA_BUSTED_PROFILER_TIMING_THRESHOLD: ${{ inputs.timing_threshold }}
       run: |
         nlua -e 'require("mega.busted.make_busted_profile").main()'
 
