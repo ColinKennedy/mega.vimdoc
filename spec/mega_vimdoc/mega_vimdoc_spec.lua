@@ -325,7 +325,7 @@ Return ~
 end)
 
 describe("@class", function()
-    it("works with base class inheritance #current", function()
+    it("works with base class inheritance", function()
         _run_test(
             [[
 ---@class Foo : SomeOtherBaseClass
